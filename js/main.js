@@ -1,8 +1,8 @@
 /* ===== Kerllen Rodrigues · Landing page ===== */
 
 /* Configure aqui os contatos reais */
-const WHATSAPP_NUMBER = "5585900000000"; // DDI + DDD + número, só dígitos
-const INSTAGRAM_URL = "https://instagram.com/"; // perfil da nutricionista
+const WHATSAPP_NUMBER = "+55 86 99819-1553"; // DDI + DDD + número, só dígitos
+const INSTAGRAM_URL = "https://www.instagram.com/nutri.kerllenm/"; // perfil da nutricionista
 
 /* Header sombra ao rolar */
 const header = document.getElementById("header");
