@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel · Kerllen Rodrigues Nutrição</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body class="app-body">
+
+  <div class="app">
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar">
+      <a href="index.html" class="logo sidebar__logo">
+        <span class="logo__mark">KR</span>
+        <span class="logo__text">Kerllen Rodrigues<em>Painel da Nutri</em></span>
+      </a>
+      <nav class="sidebar__nav">
+        <button class="side-link active" data-view="dashboard">◈ Dashboard</button>
+        <button class="side-link" data-view="pacientes">◈ Pacientes</button>
+        <button class="side-link" data-view="leads">◈ Leads do site</button>
+        <a class="side-link" href="anamnese.html">◈ Formulário de Anamnese</a>
+        <a class="side-link" href="index.html">◈ Ver site</a>
+      </nav>
+      <div class="sidebar__foot">Área restrita · uso interno</div>
+    </aside>
+
+    <!-- ===== CONTEÚDO ===== -->
+    <main class="main">
+
+      <!-- DASHBOARD -->
+      <section class="view active" id="view-dashboard">
+        <header class="main__head">
+          <div><h1>Bom dia, Kerllen ✦</h1><p id="todayLabel"></p></div>
+          <button class="btn btn--gold" id="btnNovoPaciente">+ Novo paciente</button>
+        </header>
+
+        <div class="stats">
+          <div class="stat"><span class="stat__icon">👥</span><div><strong id="statAtivos">0</strong><span>Pacientes ativos</span></div></div>
+          <div class="stat"><span class="stat__icon">📅</span><div><strong id="statHoje">0</strong><span>Consultas hoje</span></div></div>
+          <div class="stat"><span class="stat__icon">📋</span><div><strong id="statAnamnese">0</strong><span>Anamneses pendentes</span></div></div>
+          <div class="stat"><span class="stat__icon">💬</span><div><strong id="statLeads">0</strong><span>Leads do site</span></div></div>
+        </div>
+
+        <div class="panel-grid">
+          <div class="panel">
+            <h3>Consultas de hoje</h3>
+            <ul class="agenda" id="agendaHoje"></ul>
+          </div>
+          <div class="panel">
+            <h3>Pendências de anamnese</h3>
+            <ul class="pendencias" id="listaPendencias"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- PACIENTES -->
+      <section class="view" id="view-pacientes">
+        <header class="main__head">
+          <div><h1>Pacientes</h1><p>Cadastro, busca e gestão de prontuários</p></div>
+          <button class="btn btn--gold" id="btnNovoPaciente2">+ Novo paciente</button>
+        </header>
+
+        <div class="toolbar">
+          <input type="search" id="buscaPaciente" placeholder="Buscar por nome ou telefone…">
+          <select id="filtroStatus">
+            <option value="">Todos os status</option>
+            <option value="ativo">Ativos</option>
+            <option value="inativo">Inativos</option>
+          </select>
+          <select id="filtroAnamnese">
+            <option value="">Anamnese: todas</option>
+            <option value="completa">Completa</option>
+            <option value="pendente">Pendente</option>
+          </select>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table" id="tabelaPacientes">
+            <thead>
+              <tr><th>Paciente</th><th>Contato</th><th>Objetivo</th><th>Anamnese</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p class="empty" id="pacientesVazio" hidden>Nenhum paciente encontrado.</p>
+        </div>
+      </section>
+
+      <!-- LEADS -->
+      <section class="view" id="view-leads">
+        <header class="main__head">
+          <div><h1>Leads do site</h1><p>Visitantes que preencheram o formulário de pré-atendimento</p></div>
+        </header>
+        <div class="table-wrap">
+          <table class="table" id="tabelaLeads">
+            <thead><tr><th>Nome</th><th>WhatsApp</th><th>Objetivo</th><th>Data</th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <p class="empty" id="leadsVazio" hidden>Nenhum lead recebido ainda. Eles aparecem aqui quando alguém preenche o formulário da página inicial.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ===== MODAL: NOVO PACIENTE ===== -->
+  <div class="modal" id="modalNovo" hidden>
+    <div class="modal__box">
+      <button class="modal__close" data-close>&times;</button>
+      <h2>Novo paciente</h2>
+      <form id="formNovo">
+        <div class="field"><label>Nome completo</label><input name="nome" required></div>
+        <div class="field-row">
+          <div class="field"><label>WhatsApp</label><input name="telefone" placeholder="(00) 90000-0000"></div>
+          <div class="field"><label>Data de nascimento</label><input name="nascimento" type="date"></div>
+        </div>
+        <div class="field"><label>E-mail</label><input name="email" type="email"></div>
+        <div class="field"><label>Objetivo principal</label>
+          <select name="objetivo">
+            <option>Emagrecimento</option><option>Ganho de massa muscular</option>
+            <option>Reeducação alimentar</option><option>Performance esportiva</option>
+            <option>Saúde e bem-estar geral</option>
+          </select>
+        </div>
+        <button class="btn btn--gold btn--full" type="submit">Cadastrar paciente</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: PERFIL DO PACIENTE ===== -->
+  <div class="modal" id="modalPerfil" hidden>
+    <div class="modal__box modal__box--wide">
+      <button class="modal__close" data-close>&times;</button>
+      <div class="perfil__head">
+        <span class="perfil__avatar" id="perfilAvatar">?</span>
+        <div>
+          <h2 id="perfilNome">—</h2>
+          <p id="perfilMeta">—</p>
+          <div class="perfil__tags" id="perfilTags"></div>
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="dados">Dados &amp; Metas</button>
+        <button class="tab" data-tab="historico">Histórico de consultas</button>
+        <button class="tab" data-tab="evolucao">Evolução / Prontuário</button>
+      </div>
+
+      <div class="tabpane active" id="tab-dados">
+        <dl class="datalist" id="perfilDados"></dl>
+        <div class="field"><label>Metas do paciente</label><textarea id="perfilMetas" rows="3" placeholder="Ex.: perder 6kg em 3 meses, melhorar sono…"></textarea></div>
+        <button class="btn btn--ghost" id="salvarMetas">Salvar metas</button>
+      </div>
+
+      <div class="tabpane" id="tab-historico">
+        <ul class="historico" id="perfilHistorico"></ul>
+        <form class="inline-form" id="formConsulta">
+          <input type="date" name="data" required>
+          <input type="text" name="resumo" placeholder="Resumo da consulta…" required>
+          <button class="btn btn--gold" type="submit">Registrar</button>
+        </form>
+      </div>
+
+      <div class="tabpane" id="tab-evolucao">
+        <form class="inline-form" id="formEvolucao">
+          <input type="number" step="0.1" name="peso" placeholder="Peso (kg)" required>
+          <input type="text" name="obs" placeholder="Observação clínica…">
+          <button class="btn btn--gold" type="submit">Adicionar registro</button>
+        </form>
+        <ul class="evolucao" id="perfilEvolucao"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/painel.js"></script>
+</body>
+</html>

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anamnese · Kerllen Rodrigues Nutrição</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body class="app-body">
+
+  <header class="mini-header">
+    <div class="container">
+      <a href="index.html" class="logo">
+        <span class="logo__mark">KR</span>
+        <span class="logo__text">Kerllen Rodrigues<em>Área do Paciente</em></span>
+      </a>
+      <a href="index.html" class="back">← Voltar ao site</a>
+    </div>
+  </header>
+
+  <div class="anamnese-wrap">
+    <div class="anamnese-head">
+      <h1>Formulário de Anamnese</h1>
+      <p>Responda com calma — essas informações permitem que seu plano seja 100% personalizado. ✦</p>
+    </div>
+
+    <div class="progress"><div class="progress__bar" id="progressBar"></div></div>
+    <p class="progress__label" id="progressLabel">Etapa 1</p>
+
+    <form class="step-card" id="anamneseForm" novalidate>
+
+      <!-- 0 · Identificação -->
+      <section class="step" data-step="identificacao">
+        <span class="step__tag">Identificação</span>
+        <h2>Vamos começar por você</h2>
+        <p class="step__hint">Dados básicos para montar seu prontuário.</p>
+        <div class="field"><label>Nome completo *</label><input name="nome" required></div>
+        <div class="field-row">
+          <div class="field"><label>Idade *</label><input name="idade" type="number" min="1" max="120" required></div>
+          <div class="field"><label>Sexo *</label>
+            <select name="sexo" id="campoSexo" required>
+              <option value="" disabled selected>Selecione</option>
+              <option value="feminino">Feminino</option>
+              <option value="masculino">Masculino</option>
+            </select>
+          </div>
+        </div>
+        <div class="field"><label>WhatsApp</label><input name="telefone" placeholder="(00) 90000-0000"></div>
+      </section>
+
+      <!-- 1 · Como me conheceu -->
+      <section class="step" data-step="origem">
+        <span class="step__tag">Etapa 1</span>
+        <h2>Como você me conheceu?</h2>
+        <div class="radio-group">
+          <label><input type="radio" name="origem" value="Indicação"> Indicação de amigo(a) ou família</label>
+          <label><input type="radio" name="origem" value="Instagram"> Instagram</label>
+          <label><input type="radio" name="origem" value="Google"> Google / pesquisa na internet</label>
+          <label><input type="radio" name="origem" value="Outro profissional"> Indicação de outro profissional de saúde</label>
+          <label><input type="radio" name="origem" value="Outro"> Outro</label>
+        </div>
+      </section>
+
+      <!-- 2 · Rotina -->
+      <section class="step" data-step="rotina">
+        <span class="step__tag">Etapa 2</span>
+        <h2>Rotina e hábitos</h2>
+        <div class="field-row">
+          <div class="field"><label>Horário que acorda</label><input name="acorda" type="time"></div>
+          <div class="field"><label>Horário que dorme</label><input name="dorme" type="time"></div>
+        </div>
+        <div class="field"><label>Horário de trabalho / estudo</label><input name="trabalho" placeholder="Ex.: 8h às 17h, escala 12x36…"></div>
+        <div class="field"><label>Descreva brevemente um dia comum seu</label><textarea name="rotinaDia" rows="3" placeholder="Rotina, refeições, deslocamentos…"></textarea></div>
+      </section>
+
+      <!-- 3 · Queixa principal -->
+      <section class="step" data-step="queixa">
+        <span class="step__tag">Etapa 3</span>
+        <h2>Queixa principal / objetivo</h2>
+        <p class="step__hint">O que te trouxe até aqui?</p>
+        <div class="field"><label>Motivo da consulta *</label><textarea name="queixa" rows="4" placeholder="Ex.: quero emagrecer, melhorar disposição, ganhar massa…" required></textarea></div>
+      </section>
+
+      <!-- 4 · TGI -->
+      <section class="step" data-step="tgi">
+        <span class="step__tag">Etapa 4</span>
+        <h2>Trato gastrointestinal</h2>
+        <div class="field"><label>Como funciona seu intestino?</label>
+          <select name="intestino">
+            <option value="" disabled selected>Selecione</option>
+            <option>Todos os dias, sem dificuldade</option>
+            <option>Dia sim, dia não</option>
+            <option>2x por semana ou menos (constipação)</option>
+            <option>Muito solto / diarreia frequente</option>
+          </select>
+        </div>
+        <p class="step__hint">Você sente com frequência:</p>
+        <div class="check-group">
+          <label><input type="checkbox" name="tgi" value="Azia / queimação"> Azia ou queimação</label>
+          <label><input type="checkbox" name="tgi" value="Estufamento"> Estufamento / distensão abdominal</label>
+          <label><input type="checkbox" name="tgi" value="Gases"> Excesso de gases</label>
+          <label><input type="checkbox" name="tgi" value="Náuseas"> Náuseas</label>
+          <label><input type="checkbox" name="tgi" value="Nenhum"> Nenhum desses</label>
+        </div>
+      </section>
+
+      <!-- 5 · Sono -->
+      <section class="step" data-step="sono">
+        <span class="step__tag">Etapa 5</span>
+        <h2>Sono</h2>
+        <div class="field"><label>Quantas horas você dorme por noite?</label>
+          <select name="horasSono">
+            <option value="" disabled selected>Selecione</option>
+            <option>Menos de 5h</option><option>5 a 6h</option><option>7 a 8h</option><option>Mais de 8h</option>
+          </select>
+        </div>
+        <div class="field"><label>Qualidade do sono</label>
+          <div class="radio-group radio-group--inline">
+            <label><input type="radio" name="qualidadeSono" value="Ótima"> Ótima</label>
+            <label><input type="radio" name="qualidadeSono" value="Boa"> Boa</label>
+            <label><input type="radio" name="qualidadeSono" value="Ruim"> Ruim</label>
+            <label><input type="radio" name="qualidadeSono" value="Péssima"> Péssima</label>
+          </div>
+        </div>
+        <div class="check-group">
+          <label><input type="checkbox" name="sonoSintomas" value="Insônia"> Tenho insônia ou dificuldade para pegar no sono</label>
+          <label><input type="checkbox" name="sonoSintomas" value="Acordo à noite"> Acordo várias vezes durante a noite</label>
+          <label><input type="checkbox" name="sonoSintomas" value="Acordo cansado(a)"> Acordo cansado(a)</label>
+        </div>
+      </section>
+
+      <!-- 6 · Ansiedade -->
+      <section class="step" data-step="ansiedade">
+        <span class="step__tag">Etapa 6</span>
+        <h2>Ansiedade e estresse</h2>
+        <div class="field"><label>Como você percebe seu nível de estresse/ansiedade?</label>
+          <div class="radio-group radio-group--inline">
+            <label><input type="radio" name="ansiedade" value="Baixo"> Baixo</label>
+            <label><input type="radio" name="ansiedade" value="Moderado"> Moderado</label>
+            <label><input type="radio" name="ansiedade" value="Alto"> Alto</label>
+            <label><input type="radio" name="ansiedade" value="Muito alto"> Muito alto</label>
+          </div>
+        </div>
+        <div class="field"><label>Em quais momentos você sente mais vontade de "descontar na comida"?</label><textarea name="compulsao" rows="3" placeholder="Ex.: à noite, fins de semana, após o trabalho…"></textarea></div>
+      </section>
+
+      <!-- 7 · Ciclo menstrual (condicional) -->
+      <section class="step" data-step="ciclo" data-only-sexo="feminino">
+        <span class="step__tag">Etapa 7</span>
+        <h2>Ciclo menstrual</h2>
+        <div class="field"><label>Seu ciclo é regular?</label>
+          <div class="radio-group radio-group--inline">
+            <label><input type="radio" name="cicloRegular" value="Sim"> Sim</label>
+            <label><input type="radio" name="cicloRegular" value="Não"> Não</label>
+            <label><input type="radio" name="cicloRegular" value="Não menstruo"> Não menstruo</label>
+          </div>
+        </div>
+        <div class="check-group">
+          <label><input type="checkbox" name="tpm" value="TPM intensa"> TPM intensa</label>
+          <label><input type="checkbox" name="tpm" value="Cólicas fortes"> Cólicas fortes</label>
+          <label><input type="checkbox" name="tpm" value="Compulsão na TPM"> Mais compulsão alimentar na TPM</label>
+          <label><input type="checkbox" name="tpm" value="Inchaço"> Inchaço / retenção</label>
+        </div>
+        <div class="field"><label>Usa anticoncepcional? Qual?</label><input name="anticoncepcional" placeholder="Ex.: pílula, DIU, nenhum…"></div>
+      </section>
+
+      <!-- 8 · Cabelo, pele e unha -->
+      <section class="step" data-step="cabelo">
+        <span class="step__tag">Etapa 8</span>
+        <h2>Cabelo, pele e unhas</h2>
+        <div class="check-group">
+          <label><input type="checkbox" name="cpu" value="Queda de cabelo"> Queda de cabelo</label>
+          <label><input type="checkbox" name="cpu" value="Unhas frágeis"> Unhas fracas ou quebradiças</label>
+          <label><input type="checkbox" name="cpu" value="Pele seca"> Pele muito seca</label>
+          <label><input type="checkbox" name="cpu" value="Acne"> Acne frequente</label>
+          <label><input type="checkbox" name="cpu" value="Nenhum"> Nenhuma queixa</label>
+        </div>
+      </section>
+
+      <!-- 9 · Intolerâncias -->
+      <section class="step" data-step="intolerancias">
+        <span class="step__tag">Etapa 9</span>
+        <h2>Intolerâncias alimentares</h2>
+        <div class="check-group">
+          <label><input type="checkbox" name="intolerancia" value="Lactose"> Lactose</label>
+          <label><input type="checkbox" name="intolerancia" value="Glúten"> Glúten</label>
+          <label><input type="checkbox" name="intolerancia" value="Frutose"> Frutose</label>
+          <label><input type="checkbox" name="intolerancia" value="Nenhuma"> Nenhuma conhecida</label>
+        </div>
+        <div class="field"><label>Outras intolerâncias ou alimentos que fazem mal</label><input name="intoleranciaOutros" placeholder="Descreva, se houver"></div>
+      </section>
+
+      <!-- 10 · Alergias -->
+      <section class="step" data-step="alergias">
+        <span class="step__tag">Etapa 10</span>
+        <h2>Alergias alimentares</h2>
+        <div class="field"><label>Possui alguma alergia alimentar diagnosticada?</label>
+          <div class="radio-group radio-group--inline">
+            <label><input type="radio" name="temAlergia" value="Sim"> Sim</label>
+            <label><input type="radio" name="temAlergia" value="Não"> Não</label>
+          </div>
+        </div>
+        <div class="field"><label>Se sim, quais?</label><input name="alergias" placeholder="Ex.: camarão, amendoim, ovo…"></div>
+      </section>
+
+      <!-- 11 · Suplementos -->
+      <section class="step" data-step="suplementos">
+        <span class="step__tag">Etapa 11</span>
+        <h2>Uso de suplementos</h2>
+        <div class="field"><label>Utiliza algum suplemento atualmente?</label><textarea name="suplementos" rows="3" placeholder="Ex.: whey após o treino, creatina 5g pela manhã…"></textarea></div>
+      </section>
+
+      <!-- 12 · Medicamentos -->
+      <section class="step" data-step="medicamentos">
+        <span class="step__tag">Etapa 12</span>
+        <h2>Medicamentos de uso contínuo</h2>
+        <div class="field"><label>Utiliza medicamentos contínuos? Quais e para quê?</label><textarea name="medicamentos" rows="3" placeholder="Ex.: losartana para pressão, 1x ao dia…"></textarea></div>
+      </section>
+
+      <!-- 13 · Histórico familiar -->
+      <section class="step" data-step="familia">
+        <span class="step__tag">Etapa 13</span>
+        <h2>Histórico familiar</h2>
+        <p class="step__hint">Marque as condições presentes em pais, irmãos ou avós:</p>
+        <div class="check-group">
+          <label><input type="checkbox" name="familia" value="Diabetes"> Diabetes</label>
+          <label><input type="checkbox" name="familia" value="Hipertensão"> Hipertensão (pressão alta)</label>
+          <label><input type="checkbox" name="familia" value="Obesidade"> Obesidade</label>
+          <label><input type="checkbox" name="familia" value="Colesterol alto"> Colesterol / triglicerídeos altos</label>
+          <label><input type="checkbox" name="familia" value="Doenças cardíacas"> Doenças cardíacas</label>
+          <label><input type="checkbox" name="familia" value="Câncer"> Câncer</label>
+          <label><input type="checkbox" name="familia" value="Nenhum"> Nenhuma dessas</label>
+        </div>
+      </section>
+
+      <!-- 14 · Hidratação + Xixímetro -->
+      <section class="step" data-step="hidratacao">
+        <span class="step__tag">Etapa 14</span>
+        <h2>Hidratação &amp; Xixímetro</h2>
+        <div class="field"><label>Quanta água você bebe por dia, em média?</label>
+          <select name="agua">
+            <option value="" disabled selected>Selecione</option>
+            <option>Menos de 500ml</option><option>500ml a 1L</option><option>1L a 2L</option>
+            <option>2L a 3L</option><option>Mais de 3L</option>
+          </select>
+        </div>
+        <p class="step__hint"><strong>Xixímetro:</strong> clique na cor que mais se parece com a sua urina no dia a dia.</p>
+        <div class="xiximetro" id="xiximetro"></div>
+        <p class="xixi-feedback" id="xixiFeedback" hidden></p>
+        <div class="check-group">
+          <label><input type="checkbox" name="hidraSintomas" value="Sede excessiva"> Sede excessiva</label>
+          <label><input type="checkbox" name="hidraSintomas" value="Dores de cabeça"> Dores de cabeça frequentes</label>
+          <label><input type="checkbox" name="hidraSintomas" value="Boca seca"> Boca seca</label>
+          <label><input type="checkbox" name="hidraSintomas" value="Urina com odor forte"> Urina com odor forte</label>
+        </div>
+      </section>
+
+      <!-- 15 · Álcool -->
+      <section class="step" data-step="alcool">
+        <span class="step__tag">Etapa 15</span>
+        <h2>Consumo de álcool</h2>
+        <div class="field"><label>Com que frequência você bebe?</label>
+          <select name="alcoolFreq">
+            <option value="" disabled selected>Selecione</option>
+            <option>Não bebo</option><option>Raramente (ocasiões especiais)</option>
+            <option>1x por semana</option><option>2 a 3x por semana</option><option>Quase todos os dias</option>
+          </select>
+        </div>
+        <div class="field"><label>O que costuma beber e em que quantidade?</label><input name="alcoolTipo" placeholder="Ex.: cerveja aos fins de semana, vinho…"></div>
+      </section>
+
+      <!-- 16 · Tabaco -->
+      <section class="step" data-step="tabaco">
+        <span class="step__tag">Etapa 16</span>
+        <h2>Cigarro / tabaco</h2>
+        <div class="radio-group">
+          <label><input type="radio" name="tabaco" value="Não fumo"> Não fumo</label>
+          <label><input type="radio" name="tabaco" value="Fumo socialmente"> Fumo socialmente</label>
+          <label><input type="radio" name="tabaco" value="Fumo diariamente"> Fumo diariamente</label>
+          <label><input type="radio" name="tabaco" value="Vape / cigarro eletrônico"> Uso vape / cigarro eletrônico</label>
+          <label><input type="radio" name="tabaco" value="Ex-fumante"> Ex-fumante</label>
+        </div>
+      </section>
+
+      <!-- 17 · Atividade física -->
+      <section class="step" data-step="treino">
+        <span class="step__tag">Etapa 17</span>
+        <h2>Atividade física semanal</h2>
+        <div class="field"><label>Qual(is) modalidade(s) você pratica?</label><input name="modalidade" placeholder="Ex.: musculação, corrida, crossfit, nenhuma…"></div>
+        <p class="step__hint">Preencha sua grade semanal (deixe em branco os dias de descanso):</p>
+        <div class="week-grid" id="weekGrid"></div>
+      </section>
+
+      <!-- Navegação -->
+      <div class="step-nav">
+        <button type="button" class="btn btn--ghost btn--back" id="btnVoltar">← Voltar</button>
+        <button type="button" class="btn btn--gold" id="btnAvancar">Avançar →</button>
+      </div>
+    </form>
+
+    <!-- Sucesso -->
+    <div class="step-card success" id="successCard" hidden>
+      <div class="success__icon">✓</div>
+      <h2>Anamnese enviada!</h2>
+      <p>Obrigada por responder com carinho. A Kerllen vai analisar cada detalhe antes da sua consulta para preparar um plano totalmente personalizado. ✦</p>
+      <a href="index.html" class="btn btn--gold">Voltar ao site</a>
+    </div>
+  </div>
+
+  <script src="js/anamnese.js"></script>
+</body>
+</html>

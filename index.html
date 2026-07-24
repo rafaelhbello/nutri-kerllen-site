@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kerllen Rodrigues · Nutrição Clínica e Esportiva</title>
+  <meta name="description" content="Nutrição clínica e esportiva personalizada. Agende sua avaliação com a nutricionista Kerllen Rodrigues.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="header" id="header">
+    <div class="container header__inner">
+      <a href="#inicio" class="logo">
+        <span class="logo__mark">KR</span>
+        <span class="logo__text">Kerllen Rodrigues<em>Nutricionista · CRN 00000</em></span>
+      </a>
+      <nav class="nav" id="nav">
+        <a href="#inicio">Início</a>
+        <a href="#sobre">Sobre</a>
+        <a href="#servicos">Serviços</a>
+        <a href="#depoimentos">Resultados</a>
+        <a href="#contato">Contato</a>
+        <a href="anamnese.html" class="nav__patient">Área do Paciente</a>
+        <a href="painel.html" class="nav__panel">Painel</a>
+      </nav>
+      <button class="hamburger" id="hamburger" aria-label="Abrir menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero" id="inicio">
+    <div class="container hero__grid">
+      <div class="hero__content reveal">
+        <span class="eyebrow">Nutrição Clínica &amp; Esportiva</span>
+        <h1>Sua saúde merece um plano feito <em>sob medida</em> para você.</h1>
+        <p>Atendimento humanizado e baseado em ciência para transformar sua relação com a comida, elevar sua performance e conquistar qualidade de vida — sem dietas restritivas ou fórmulas prontas.</p>
+        <div class="hero__actions">
+          <a href="#contato" class="btn btn--gold">Agendar Consulta</a>
+          <a href="#servicos" class="btn btn--ghost">Conhecer os planos</a>
+        </div>
+        <ul class="hero__badges">
+          <li><strong>+300</strong><span>pacientes atendidos</span></li>
+          <li><strong>98%</strong><span>de satisfação</span></li>
+          <li><strong>5★</strong><span>avaliação média</span></li>
+        </ul>
+      </div>
+      <div class="hero__photo reveal">
+        <div class="photo-frame">
+          <img src="assets/kerllen.jpg" alt="Nutricionista Kerllen Rodrigues" onerror="this.closest('.photo-frame').classList.add('photo-frame--missing')">
+          <div class="photo-frame__fallback"><span>KR</span><small>adicione a foto em<br>assets/kerllen.jpg</small></div>
+        </div>
+        <div class="hero__card">
+          <span class="hero__card-icon">✦</span>
+          <div><strong>Acompanhamento contínuo</strong><small>Suporte próximo durante todo o plano</small></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SOBRE ===== -->
+  <section class="section sobre" id="sobre">
+    <div class="container sobre__grid">
+      <div class="sobre__photo reveal">
+        <div class="photo-frame photo-frame--alt">
+          <img src="assets/kerllen.jpg" alt="Kerllen Rodrigues em consultório" onerror="this.closest('.photo-frame').classList.add('photo-frame--missing')">
+          <div class="photo-frame__fallback"><span>KR</span><small>adicione a foto em<br>assets/kerllen.jpg</small></div>
+        </div>
+      </div>
+      <div class="sobre__content reveal">
+        <span class="eyebrow">Sobre a Nutricionista</span>
+        <h2>Prazer, eu sou a <em>Kerllen Rodrigues</em></h2>
+        <p>Nutricionista clínica e esportiva, apaixonada por ajudar pessoas a construírem uma relação leve e sustentável com a alimentação. Acredito que cada corpo tem uma história — e que nenhum plano alimentar deve ser igual ao outro.</p>
+        <p>Minha metodologia une <strong>avaliação completa</strong>, <strong>plano 100% individualizado</strong> e <strong>acompanhamento próximo</strong>, com ajustes constantes de acordo com a sua rotina, seus exames e a sua evolução.</p>
+        <ul class="sobre__list">
+          <li><span>✦</span> Graduada em Nutrição — CRN ativo</li>
+          <li><span>✦</span> Especialização em Nutrição Esportiva</li>
+          <li><span>✦</span> Formação em Nutrição Clínica Funcional</li>
+          <li><span>✦</span> Atendimento presencial e online</li>
+        </ul>
+        <a href="#contato" class="btn btn--gold">Quero minha avaliação</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SERVIÇOS ===== -->
+  <section class="section section--beige" id="servicos">
+    <div class="container">
+      <div class="section__head reveal">
+        <span class="eyebrow">Serviços &amp; Planos</span>
+        <h2>Acompanhamentos pensados para o <em>seu objetivo</em></h2>
+      </div>
+      <div class="cards">
+        <article class="card reveal">
+          <div class="card__icon">🥗</div>
+          <h3>Reeducação Alimentar</h3>
+          <p>Aprenda a comer bem sem terrorismo nutricional. Plano flexível, adaptado à sua rotina, para resultados que duram a vida inteira.</p>
+          <a href="#contato" class="card__link">Agendar →</a>
+        </article>
+        <article class="card reveal">
+          <div class="card__icon">🏋️</div>
+          <h3>Nutrição Esportiva</h3>
+          <p>Estratégias de performance, hipertrofia e recuperação para atletas e praticantes de atividade física de todos os níveis.</p>
+          <a href="#contato" class="card__link">Agendar →</a>
+        </article>
+        <article class="card reveal">
+          <div class="card__icon">⚖️</div>
+          <h3>Emagrecimento Saudável</h3>
+          <p>Protocolo individualizado com foco em perda de gordura preservando massa magra, energia e saúde hormonal.</p>
+          <a href="#contato" class="card__link">Agendar →</a>
+        </article>
+        <article class="card reveal">
+          <div class="card__icon">🩺</div>
+          <h3>Nutrição Clínica</h3>
+          <p>Cuidado nutricional para condições como diabetes, hipertensão, TGI sensível, saúde da mulher e muito mais.</p>
+          <a href="#contato" class="card__link">Agendar →</a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DEPOIMENTOS ===== -->
+  <section class="section" id="depoimentos">
+    <div class="container">
+      <div class="section__head reveal">
+        <span class="eyebrow">Prova Social</span>
+        <h2>Quem confiou, <em>transformou</em></h2>
+      </div>
+      <div class="metrics reveal">
+        <div class="metric"><strong data-count="300">0</strong><span>pacientes atendidos</span></div>
+        <div class="metric"><strong data-count="1200">0</strong><span>kg eliminados com saúde</span></div>
+        <div class="metric"><strong data-count="98">0</strong><span>% de satisfação</span></div>
+        <div class="metric"><strong data-count="4">0</strong><span>anos de experiência</span></div>
+      </div>
+      <div class="testimonials">
+        <figure class="testimonial reveal">
+          <div class="testimonial__stars">★★★★★</div>
+          <blockquote>“Perdi 12kg em 6 meses comendo de verdade, sem sofrimento. A Kerllen mudou a minha relação com a comida.”</blockquote>
+          <figcaption><span class="testimonial__avatar">M</span> Mariana S. · Reeducação Alimentar</figcaption>
+        </figure>
+        <figure class="testimonial reveal">
+          <div class="testimonial__stars">★★★★★</div>
+          <blockquote>“Minha performance nos treinos deu um salto. Plano prático, direto e que cabe na minha rotina corrida.”</blockquote>
+          <figcaption><span class="testimonial__avatar">R</span> Rafael T. · Nutrição Esportiva</figcaption>
+        </figure>
+        <figure class="testimonial reveal">
+          <div class="testimonial__stars">★★★★★</div>
+          <blockquote>“Atendimento acolhedor do início ao fim. Me senti ouvida de verdade — cada detalhe do plano tinha a ver comigo.”</blockquote>
+          <figcaption><span class="testimonial__avatar">A</span> Ana Clara F. · Emagrecimento</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== LEAD / CONTATO ===== -->
+  <section class="section section--beige" id="contato">
+    <div class="container lead__grid">
+      <div class="lead__content reveal">
+        <span class="eyebrow">Pré-Atendimento</span>
+        <h2>Dê o primeiro passo <em>hoje</em></h2>
+        <p>Preencha seus dados e a Kerllen entrará em contato pelo WhatsApp para entender seu momento e agendar sua avaliação.</p>
+        <ul class="lead__steps">
+          <li><span>1</span> Você envia seus dados</li>
+          <li><span>2</span> Conversa inicial pelo WhatsApp</li>
+          <li><span>3</span> Avaliação completa + plano sob medida</li>
+        </ul>
+      </div>
+      <form class="lead__form reveal" id="leadForm" novalidate>
+        <h3>Quero minha avaliação</h3>
+        <div class="field">
+          <label for="leadNome">Nome completo</label>
+          <input type="text" id="leadNome" name="nome" placeholder="Seu nome" required>
+        </div>
+        <div class="field">
+          <label for="leadZap">WhatsApp</label>
+          <input type="tel" id="leadZap" name="whatsapp" placeholder="(00) 90000-0000" required>
+        </div>
+        <div class="field">
+          <label for="leadObjetivo">Objetivo de saúde</label>
+          <select id="leadObjetivo" name="objetivo" required>
+            <option value="" disabled selected>Selecione seu objetivo</option>
+            <option>Emagrecimento</option>
+            <option>Ganho de massa muscular</option>
+            <option>Reeducação alimentar</option>
+            <option>Performance esportiva</option>
+            <option>Saúde e bem-estar geral</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn--gold btn--full">Enviar e agendar minha consulta</button>
+        <p class="lead__ok" id="leadOk" hidden>✦ Recebido! Em instantes você será direcionado ao WhatsApp.</p>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <div class="container footer__grid">
+      <div>
+        <a href="#inicio" class="logo logo--footer"><span class="logo__mark">KR</span> Kerllen Rodrigues</a>
+        <p>Nutrição clínica e esportiva com atendimento humanizado, presencial e online.</p>
+      </div>
+      <div>
+        <h4>Navegação</h4>
+        <a href="#sobre">Sobre</a>
+        <a href="#servicos">Serviços</a>
+        <a href="#depoimentos">Resultados</a>
+        <a href="anamnese.html">Área do Paciente</a>
+      </div>
+      <div>
+        <h4>Contato</h4>
+        <a href="#" id="footerZap">WhatsApp</a>
+        <a href="#" target="_blank" rel="noopener">Instagram</a>
+        <span>Atendimento on-line para todo o Brasil</span>
+      </div>
+    </div>
+    <div class="footer__bar">© <span id="year"></span> Kerllen Rodrigues · Nutricionista. Todos os direitos reservados.</div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
