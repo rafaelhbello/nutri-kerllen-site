@@ -2,49 +2,10 @@
 
 const KEY = "kr_pacientes";
 
-/* Seed inicial (aparece só na primeira visita) */
-function seed() {
-  if (localStorage.getItem(KEY)) return;
-  const demo = [
-    {
-      id: 1, nome: "Mariana Souza", telefone: "(85) 98888-1111", email: "mariana@email.com",
-      nascimento: "1994-03-12", objetivo: "Emagrecimento", status: "ativo", anamnese: "completa",
-      metas: "Perder 6kg em 3 meses; melhorar qualidade do sono.",
-      consultas: [
-        { data: hojeISO(), resumo: "Consulta de retorno — ajuste de plano" },
-        { data: "2026-06-20", resumo: "Primeira consulta + avaliação antropométrica" }
-      ],
-      evolucao: [
-        { data: "2026-06-20", peso: 74.2, obs: "Início do acompanhamento" },
-        { data: hojeISO(), peso: 72.6, obs: "Boa adesão ao plano" }
-      ]
-    },
-    {
-      id: 2, nome: "Rafael Torres", telefone: "(85) 97777-2222", email: "rafael@email.com",
-      nascimento: "1990-08-02", objetivo: "Performance esportiva", status: "ativo", anamnese: "pendente",
-      metas: "", consultas: [{ data: hojeISO(), resumo: "Avaliação inicial" }], evolucao: []
-    },
-    {
-      id: 3, nome: "Ana Clara Ferreira", telefone: "(85) 96666-3333", email: "ana@email.com",
-      nascimento: "1998-11-25", objetivo: "Reeducação alimentar", status: "ativo", anamnese: "pendente",
-      metas: "", consultas: [], evolucao: []
-    },
-    {
-      id: 4, nome: "Carlos Lima", telefone: "(85) 95555-4444", email: "carlos@email.com",
-      nascimento: "1985-01-30", objetivo: "Ganho de massa muscular", status: "inativo", anamnese: "completa",
-      metas: "Retomar acompanhamento em agosto.", consultas: [{ data: "2026-04-10", resumo: "Última consulta antes da pausa" }], evolucao: []
-    }
-  ];
-  localStorage.setItem(KEY, JSON.stringify(demo));
+/* Inicializa o armazenamento vazio */
+if (!localStorage.getItem(KEY)) {
+  localStorage.setItem(KEY, JSON.stringify([]));
 }
-function hojeISO() { return new Date().toISOString().slice(0, 10); }
-function load() { return JSON.parse(localStorage.getItem(KEY) || "[]"); }
-function save(list) { localStorage.setItem(KEY, JSON.stringify(list)); }
-function fmt(d) { return d ? d.split("-").reverse().join("/") : "—"; }
-function initials(nome) { return nome.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase(); }
-
-seed();
-
 /* ---------- Navegação lateral ---------- */
 document.querySelectorAll(".side-link[data-view]").forEach(btn => {
   btn.addEventListener("click", () => {
