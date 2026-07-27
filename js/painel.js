@@ -2,9 +2,36 @@
 
 const KEY = "kr_pacientes";
 
+/const KEY = "kr_pacientes";
+
 /* Inicializa o armazenamento vazio */
 if (!localStorage.getItem(KEY)) {
   localStorage.setItem(KEY, JSON.stringify([]));
+}
+
+function hojeISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function load() {
+  return JSON.parse(localStorage.getItem(KEY) || "[]");
+}
+
+function save(list) {
+  localStorage.setItem(KEY, JSON.stringify(list));
+}
+
+function fmt(d) {
+  return d ? d.split("-").reverse().join("/") : "—";
+}
+
+function initials(nome) {
+  return nome
+    .split(" ")
+    .map(p => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 }
 /* ---------- Navegação lateral ---------- */
 document.querySelectorAll(".side-link[data-view]").forEach(btn => {
