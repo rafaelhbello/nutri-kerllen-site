@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login · Painel · Kerllen Rodrigues Nutrição</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .login-page {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--off);
+      padding: 24px;
+    }
+    .login-card {
+      width: min(400px, 100%);
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 40px 32px;
+      border: 1px solid var(--line);
+    }
+    .login-logo {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 28px;
+    }
+    .login-logo .logo__mark {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--gold); color: var(--white);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--serif); font-weight: 700;
+    }
+    .login-logo strong { display: block; font-family: var(--serif); font-size: 1.05rem; }
+    .login-logo span { display: block; font-size: .8rem; color: var(--muted); }
+    .login-card h1 { font-size: 1.4rem; margin-bottom: 6px; }
+    .login-card p.sub { color: var(--muted); font-size: .92rem; margin-bottom: 24px; }
+    .login-field { margin-bottom: 16px; }
+    .login-field label { display: block; font-size: .85rem; margin-bottom: 6px; color: var(--ink); font-weight: 500; }
+    .login-field input {
+      width: 100%; padding: 12px 14px; border: 1px solid var(--line);
+      border-radius: 10px; font-family: var(--sans); font-size: .95rem; background: var(--off);
+    }
+    .login-field input:focus { outline: none; border-color: var(--gold); background: var(--white); }
+    .login-error {
+      background: #fbeaea; color: #a13c3c; border: 1px solid #f0caca;
+      border-radius: 10px; padding: 10px 14px; font-size: .87rem; margin-bottom: 16px;
+    }
+    .btn-login {
+      width: 100%; padding: 13px; border: none; border-radius: 10px;
+      background: var(--gold); color: var(--white); font-family: var(--sans);
+      font-weight: 600; font-size: .95rem; cursor: pointer; transition: background .2s;
+    }
+    .btn-login:hover { background: var(--gold-dark); }
+    .btn-login:disabled { opacity: .6; cursor: not-allowed; }
+    .login-back { display: block; text-align: center; margin-top: 20px; font-size: .87rem; color: var(--muted); }
+    .login-back:hover { color: var(--gold-dark); }
+  </style>
+</head>
+<body>
+
+  <div class="login-page">
+    <div class="login-card">
+      <div class="login-logo">
+        <span class="logo__mark">KR</span>
+        <div>
+          <strong>Kerllen Rodrigues</strong>
+          <span>Painel da nutricionista</span>
+        </div>
+      </div>
+
+      <h1>Acessar painel</h1>
+      <p class="sub">Entre com seu e-mail e senha cadastrados no Supabase.</p>
+
+      <div class="login-error" id="loginError" hidden></div>
+
+      <form id="loginForm">
+        <div class="login-field">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" name="email" required autocomplete="username">
+        </div>
+        <div class="login-field">
+          <label for="password">Senha</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn-login" id="btnLogin">Entrar</button>
+      </form>
+
+      <a href="index.html" class="login-back">← Voltar ao site</a>
+    </div>
+  </div>
+
+  <script src="js/supabase.js"></script>
+  <script>
+    /* Se já estiver logado, vai direto pro painel */
+    if (sb.getSession()) window.location.href = "painel.html";
+
+    const form = document.getElementById("loginForm");
+    const errBox = document.getElementById("loginError");
+    const btn = document.getElementById("btnLogin");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errBox.hidden = true;
+      btn.disabled = true; btn.textContent = "Entrando...";
+      try {
+        await sb.signIn(form.email.value.trim(), form.password.value);
+        window.location.href = "painel.html";
+      } catch (err) {
+        errBox.textContent = err.message || "Não foi possível entrar. Confira e-mail e senha.";
+        errBox.hidden = false;
+        btn.disabled = false; btn.textContent = "Entrar";
+      }
+    });
+  </script>
+</body>
+</html>
