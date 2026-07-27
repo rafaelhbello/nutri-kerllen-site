@@ -2,8 +2,6 @@
 
 const KEY = "kr_pacientes";
 
-/const KEY = "kr_pacientes";
-
 /* Inicializa o armazenamento vazio */
 if (!localStorage.getItem(KEY)) {
   localStorage.setItem(KEY, JSON.stringify([]));
