@@ -2,7 +2,7 @@
 const SUPABASE_URL = "https://zuxugspnhjyjjygfbggc.supabase.co";
 // A chave abaixo parece estar incorreta ou expirada. 
 // O usuário deve fornecer a chave correta do Supabase (anon key).
-const SUPABASE_KEY = "SUA_ANON_KEY_AQUI";
+const SUPABASE_KEY = "sb_publishable_WJygvlkvVbVnHbx_M8J2EQ_b8dskTps";
 
 const sb = {
   async signIn(email, password) {
