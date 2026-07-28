@@ -145,6 +145,18 @@ async function enviar() {
     console.log("PAYLOAD FINAL:", payload);
     await sb.saveAnamnese(payload);
 
+    // Unificação: Salva também como Lead para prospecção no painel
+    try {
+      await sb.saveLead({
+        nome: payload.nome,
+        whatsapp: payload.telefone,
+        objetivo: payload.respostas.queixa || "Preencheu Anamnese"
+      });
+      console.log("Lead criado com sucesso a partir da anamnese");
+    } catch (e) {
+      console.error("Erro ao criar lead automático:", e);
+    }
+
     form.hidden = true;
     document.querySelector(".progress").hidden = true;
     label.hidden = true;
