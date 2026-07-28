@@ -51,9 +51,9 @@ zapInput.addEventListener("input", () => {
   zapInput.value = v;
 });
 
-/* Formulário de lead → salva localmente e abre WhatsApp */
+/* Formulário de lead → salva no Supabase e abre WhatsApp */
 const leadForm = document.getElementById("leadForm");
-leadForm.addEventListener("submit", e => {
+leadForm.addEventListener("submit", async e => {
   e.preventDefault();
   const nome = leadForm.nome.value.trim();
   const whatsapp = leadForm.whatsapp.value.trim();
@@ -68,18 +68,25 @@ leadForm.addEventListener("submit", e => {
     });
   if (!ok) return;
 
-  const leads = JSON.parse(localStorage.getItem("kr_leads") || "[]");
-  leads.push({ nome, whatsapp, objetivo, data: new Date().toISOString() });
-  localStorage.setItem("kr_leads", JSON.stringify(leads));
+  const btn = leadForm.querySelector('[type="submit"]');
+  if (btn) btn.disabled = true;
+  try {
+    await sb.saveLead({ nome, whatsapp, objetivo });
 
-  document.getElementById("leadOk").hidden = false;
-  const msg = encodeURIComponent(
-    `Olá, Kerllen! Me chamo ${nome} e meu objetivo é: ${objetivo}. Gostaria de agendar uma avaliação.`
-  );
-  setTimeout(() => {
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
-    leadForm.reset();
-  }, 900);
+    document.getElementById("leadOk").hidden = false;
+    const msg = encodeURIComponent(
+      `Olá, Kerllen! Me chamo ${nome} e meu objetivo é: ${objetivo}. Gostaria de agendar uma avaliação.`
+    );
+    setTimeout(() => {
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
+      leadForm.reset();
+    }, 900);
+  } catch (err) {
+    console.error(err);
+    alert("Não foi possível enviar seus dados agora. Tente novamente em instantes.");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 });
 
 /* Links dinâmicos */
