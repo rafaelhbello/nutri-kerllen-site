@@ -34,14 +34,13 @@ const sb = {
       "Content-Type": "application/json",
       "Prefer": "return=representation"
     };
-    // Para requisições anônimas, enviamos apenas o apikey. 
+    // Para requisições anônimas, enviamos apenas o apikey.
     // O Authorization Bearer só é enviado se houver um token de usuário logado.
+    // A chave publishable (sb_publishable_...) não é um JWT, então NÃO deve
+    // ser enviada como Bearer — isso faz o Supabase falhar ao resolver a role
+    // "anon" e o RLS acaba barrando a requisição.
     if (token) {
       headers["Authorization"] = "Bearer " + token;
-    } else {
-      // Algumas configurações de RLS exigem a anon key no Authorization também.
-      // Vamos tentar enviar apenas o apikey primeiro, se falhar, o log nos dirá.
-      headers["Authorization"] = "Bearer " + SUPABASE_KEY;
     }
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
       method, headers, body: body ? JSON.stringify(body) : undefined
