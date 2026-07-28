@@ -1,36 +1,50 @@
-/* ===== Painel da Nutricionista ===== */
+/* ===== Painel da Nutricionista (dados no Supabase) ===== */
 
-const KEY = "kr_pacientes";
+if (!requireAuth()) throw new Error("Não autenticado");
 
-/* Inicializa o armazenamento vazio */
-if (!localStorage.getItem(KEY)) {
-  localStorage.setItem(KEY, JSON.stringify([]));
+let pacientesCache = [];
+let leadsCache = [];
+
+function hojeISO() { return new Date().toISOString().slice(0, 10); }
+function fmt(d) { return d ? d.split("-").reverse().join("/") : "—"; }
+function initials(nome) { return nome.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase(); }
+
+function avisoErro(msg) {
+  console.error(msg);
+  alert(typeof msg === "string" ? msg : (msg?.message || "Ocorreu um erro ao falar com o Supabase."));
 }
 
-function hojeISO() {
-  return new Date().toISOString().slice(0, 10);
+/* ---------- Carregamento inicial ---------- */
+async function carregarTudo() {
+  try {
+    [pacientesCache, leadsCache] = await Promise.all([sb.getPacientes(), sb.getLeads()]);
+    await sincronizarAnamneses();
+    renderPacientes();
+    renderLeads();
+    await renderDashboard();
+  } catch (err) {
+    avisoErro(err);
+  }
 }
 
-function load() {
-  return JSON.parse(localStorage.getItem(KEY) || "[]");
+/* Marca como "completa" o paciente cuja anamnese já foi enviada pela área do paciente */
+async function sincronizarAnamneses() {
+  try {
+    const anamneses = await sb.getAnamneses();
+    const pendentes = pacientesCache.filter(p => p.anamnese !== "completa");
+    for (const a of anamneses) {
+      const nomeEnviado = (a.nome || "").trim().toLowerCase();
+      const p = pendentes.find(x => x.nome.trim().toLowerCase() === nomeEnviado);
+      if (p) {
+        await sb.updatePaciente(p.id, { anamnese: "completa" });
+        p.anamnese = "completa";
+      }
+    }
+  } catch (err) {
+    console.error("Falha ao sincronizar anamneses:", err);
+  }
 }
 
-function save(list) {
-  localStorage.setItem(KEY, JSON.stringify(list));
-}
-
-function fmt(d) {
-  return d ? d.split("-").reverse().join("/") : "—";
-}
-
-function initials(nome) {
-  return nome
-    .split(" ")
-    .map(p => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
 /* ---------- Navegação lateral ---------- */
 document.querySelectorAll(".side-link[data-view]").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -41,27 +55,33 @@ document.querySelectorAll(".side-link[data-view]").forEach(btn => {
   });
 });
 
-/* ---------- Dashboard ---------- */
-function renderDashboard() {
-  const pacientes = load();
-  const leads = JSON.parse(localStorage.getItem("kr_leads") || "[]");
-  const hoje = hojeISO();
-  const consultasHoje = [];
-  pacientes.forEach(p => (p.consultas || []).forEach(c => { if (c.data === hoje) consultasHoje.push({ ...c, nome: p.nome }); }));
-  const pendentes = pacientes.filter(p => p.anamnese !== "completa" && p.status === "ativo");
+document.getElementById("btnLogout")?.addEventListener("click", () => sb.signOut());
 
-  document.getElementById("statAtivos").textContent = pacientes.filter(p => p.status === "ativo").length;
-  document.getElementById("statHoje").textContent = consultasHoje.length;
+/* ---------- Dashboard ---------- */
+async function renderDashboard() {
+  const pendentes = pacientesCache.filter(p => p.anamnese !== "completa" && p.status === "ativo");
+
+  document.getElementById("statAtivos").textContent = pacientesCache.filter(p => p.status === "ativo").length;
   document.getElementById("statAnamnese").textContent = pendentes.length;
-  document.getElementById("statLeads").textContent = leads.length;
+  document.getElementById("statLeads").textContent = leadsCache.length;
 
   document.getElementById("todayLabel").textContent =
     new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
   const agenda = document.getElementById("agendaHoje");
-  agenda.innerHTML = consultasHoje.length
-    ? consultasHoje.map((c, i) => `<li><time>${String(8 + i * 2).padStart(2, "0")}:00</time> ${c.nome} — ${c.resumo}</li>`).join("")
-    : `<li class="empty-li">Nenhuma consulta registrada para hoje.</li>`;
+  try {
+    const consultasHoje = await sb.getConsultasPorData(hojeISO());
+    document.getElementById("statHoje").textContent = consultasHoje.length;
+    agenda.innerHTML = consultasHoje.length
+      ? consultasHoje.map(c => {
+          const p = pacientesCache.find(x => x.id === c.paciente_id);
+          return `<li><time>${fmt(c.data)}</time> ${p ? p.nome : "Paciente"} — ${c.resumo}</li>`;
+        }).join("")
+      : `<li class="empty-li">Nenhuma consulta registrada para hoje.</li>`;
+  } catch (err) {
+    document.getElementById("statHoje").textContent = "—";
+    agenda.innerHTML = `<li class="empty-li">Não foi possível carregar a agenda de hoje.</li>`;
+  }
 
   const pend = document.getElementById("listaPendencias");
   pend.innerHTML = pendentes.length
@@ -75,7 +95,7 @@ function renderPacientes() {
   const q = (document.getElementById("buscaPaciente").value || "").toLowerCase();
   const fs = document.getElementById("filtroStatus").value;
   const fa = document.getElementById("filtroAnamnese").value;
-  const list = load().filter(p =>
+  const list = pacientesCache.filter(p =>
     (!q || p.nome.toLowerCase().includes(q) || (p.telefone || "").includes(q)) &&
     (!fs || p.status === fs) && (!fa || p.anamnese === fa)
   );
@@ -96,11 +116,11 @@ function renderPacientes() {
 
 /* ---------- Leads ---------- */
 function renderLeads() {
-  const leads = JSON.parse(localStorage.getItem("kr_leads") || "[]").slice().reverse();
+  const leads = leadsCache.slice().reverse();
   const tb = document.querySelector("#tabelaLeads tbody");
   document.getElementById("leadsVazio").hidden = leads.length > 0;
   tb.innerHTML = leads.map(l =>
-    `<tr><td class="t-name">${l.nome}</td><td>${l.whatsapp}</td><td>${l.objetivo}</td><td>${new Date(l.data).toLocaleDateString("pt-BR")}</td></tr>`).join("");
+    `<tr><td class="t-name">${l.nome}</td><td>${l.whatsapp || "—"}</td><td>${l.objetivo || "—"}</td><td>${new Date(l.created_at).toLocaleDateString("pt-BR")}</td></tr>`).join("");
 }
 
 /* ---------- Modal novo paciente ---------- */
@@ -108,25 +128,33 @@ const modalNovo = document.getElementById("modalNovo");
 ["btnNovoPaciente", "btnNovoPaciente2"].forEach(id =>
   document.getElementById(id).addEventListener("click", () => (modalNovo.hidden = false)));
 
-document.getElementById("formNovo").addEventListener("submit", e => {
+document.getElementById("formNovo").addEventListener("submit", async e => {
   e.preventDefault();
   const f = e.target;
-  const list = load();
-  list.push({
-    id: Date.now(), nome: f.nome.value.trim(), telefone: f.telefone.value.trim(),
-    email: f.email.value.trim(), nascimento: f.nascimento.value, objetivo: f.objetivo.value,
-    status: "ativo", anamnese: "pendente", metas: "", consultas: [], evolucao: []
-  });
-  save(list); f.reset(); modalNovo.hidden = true;
-  renderDashboard(); renderPacientes();
+  const btn = f.querySelector('[type="submit"]');
+  try {
+    if (btn) btn.disabled = true;
+    const [novo] = await sb.createPaciente({
+      nome: f.nome.value.trim(), telefone: f.telefone.value.trim(),
+      email: f.email.value.trim(), nascimento: f.nascimento.value || null,
+      objetivo: f.objetivo.value, status: "ativo", anamnese: "pendente", metas: ""
+    });
+    pacientesCache.push(novo);
+    f.reset(); modalNovo.hidden = true;
+    renderDashboard(); renderPacientes();
+  } catch (err) {
+    avisoErro(err);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 });
 
 /* ---------- Perfil do paciente ---------- */
 const modalPerfil = document.getElementById("modalPerfil");
 let atual = null;
 
-function abrirPerfil(id) {
-  atual = load().find(p => p.id === id);
+async function abrirPerfil(id) {
+  atual = pacientesCache.find(p => p.id === id);
   if (!atual) return;
   document.getElementById("perfilAvatar").textContent = initials(atual.nome);
   document.getElementById("perfilNome").textContent = atual.nome;
@@ -139,13 +167,28 @@ function abrirPerfil(id) {
     ["Nascimento", fmt(atual.nascimento)], ["Objetivo", atual.objetivo]
   ].map(([k, v]) => `<div><dt>${k}</dt><dd>${v || "—"}</dd></div>`).join("");
   document.getElementById("perfilMetas").value = atual.metas || "";
-  renderHistorico(); renderEvolucao();
   modalPerfil.hidden = false;
+
+  document.getElementById("perfilHistorico").innerHTML = `<li class="empty-li">Carregando…</li>`;
+  document.getElementById("perfilEvolucao").innerHTML = `<li class="empty-li">Carregando…</li>`;
+  try {
+    const [consultas, evolucao] = await Promise.all([sb.getConsultas(id), sb.getEvolucao(id)]);
+    atual.consultas = consultas; atual.evolucao = evolucao;
+    renderHistorico(); renderEvolucao();
+  } catch (err) {
+    avisoErro(err);
+  }
 }
 
-function persistAtual() {
-  const list = load().map(p => (p.id === atual.id ? atual : p));
-  save(list); renderDashboard(); renderPacientes();
+async function persistAtual(campos) {
+  try {
+    await sb.updatePaciente(atual.id, campos);
+    Object.assign(atual, campos);
+    pacientesCache = pacientesCache.map(p => (p.id === atual.id ? { ...p, ...campos } : p));
+    renderDashboard(); renderPacientes();
+  } catch (err) {
+    avisoErro(err);
+  }
 }
 
 function renderHistorico() {
@@ -162,19 +205,29 @@ function renderEvolucao() {
 }
 
 document.getElementById("salvarMetas").addEventListener("click", () => {
-  atual.metas = document.getElementById("perfilMetas").value; persistAtual();
+  persistAtual({ metas: document.getElementById("perfilMetas").value });
 });
-document.getElementById("formConsulta").addEventListener("submit", e => {
+
+document.getElementById("formConsulta").addEventListener("submit", async e => {
   e.preventDefault();
-  atual.consultas = atual.consultas || [];
-  atual.consultas.push({ data: e.target.data.value, resumo: e.target.resumo.value.trim() });
-  e.target.reset(); persistAtual(); renderHistorico();
+  try {
+    const [nova] = await sb.addConsulta({ paciente_id: atual.id, data: e.target.data.value, resumo: e.target.resumo.value.trim() });
+    atual.consultas = [...(atual.consultas || []), nova];
+    e.target.reset(); renderHistorico();
+  } catch (err) {
+    avisoErro(err);
+  }
 });
-document.getElementById("formEvolucao").addEventListener("submit", e => {
+
+document.getElementById("formEvolucao").addEventListener("submit", async e => {
   e.preventDefault();
-  atual.evolucao = atual.evolucao || [];
-  atual.evolucao.push({ data: hojeISO(), peso: +e.target.peso.value, obs: e.target.obs.value.trim() });
-  e.target.reset(); persistAtual(); renderEvolucao();
+  try {
+    const [nova] = await sb.addEvolucao({ paciente_id: atual.id, data: hojeISO(), peso: +e.target.peso.value, obs: e.target.obs.value.trim() });
+    atual.evolucao = [...(atual.evolucao || []), nova];
+    e.target.reset(); renderEvolucao();
+  } catch (err) {
+    avisoErro(err);
+  }
 });
 
 /* Fechar modais */
@@ -182,16 +235,4 @@ document.querySelectorAll(".modal").forEach(m => {
   m.addEventListener("click", e => { if (e.target === m || e.target.hasAttribute("data-close")) m.hidden = true; });
 });
 
-/* Sincroniza anamneses enviadas pela área do paciente */
-(function syncAnamneses() {
-  const enviadas = JSON.parse(localStorage.getItem("kr_anamneses") || "[]");
-  if (!enviadas.length) return;
-  const list = load();
-  enviadas.forEach(a => {
-    const p = list.find(x => x.nome.toLowerCase() === (a.identificacao?.nome || "").toLowerCase());
-    if (p) p.anamnese = "completa";
-  });
-  save(list);
-})();
-
-renderDashboard(); renderPacientes(); renderLeads();
+carregarTudo();
