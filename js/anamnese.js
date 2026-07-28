@@ -127,18 +127,30 @@ function coletar() {
   return data;
 }
 
-function enviar() {
+async function enviar() {
   if (!validaAtual()) return;
   const data = coletar();
-  const all = JSON.parse(localStorage.getItem("kr_anamneses") || "[]");
-  all.push(data);
-  localStorage.setItem("kr_anamneses", JSON.stringify(all));
+  btnAvancar.disabled = true;
+  try {
+    await sb.saveAnamnese({
+      nome: data.identificacao.nome,
+      telefone: data.identificacao.telefone,
+      sexo: data.identificacao.sexo,
+      idade: data.identificacao.idade ? +data.identificacao.idade : null,
+      respostas: data.respostas,
+      treinos: data.treinos
+    });
 
-  form.hidden = true;
-  document.querySelector(".progress").hidden = true;
-  label.hidden = true;
-  document.getElementById("successCard").hidden = false;
-  window.scrollTo({ top: 0, behavior: "smooth" });
+    form.hidden = true;
+    document.querySelector(".progress").hidden = true;
+    label.hidden = true;
+    document.getElementById("successCard").hidden = false;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } catch (err) {
+    console.error(err);
+    alert("Não foi possível enviar a anamnese agora. Tente novamente em instantes.");
+    btnAvancar.disabled = false;
+  }
 }
 
 /* Recalcula fluxo quando o sexo muda (etapa condicional) */
