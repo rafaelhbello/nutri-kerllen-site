@@ -1,6 +1,6 @@
 /* ===== Supabase config — Kerllen Rodrigues Nutrição ===== */
 const SUPABASE_URL = "https://zuxugspnhjyjjygfbggc.supabase.co";
-const SUPABASE_KEY = "sb_publishable_WJygvlkvVbVnHbx_M8J2EQ_b8dskTps";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1eHVnc3BuaGp5amp5Z2ZiZ2djIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxNTA0OTAsImV4cCI6MjEwMDcyNjQ5MH0.h9S1-tRgN7UE0C33xLtqeXei3bw6YWMgZgiyGP8oSKo"; // Chave legacy anon (JWT) — compatível com fetch direto + RLS "to anon"
 
 const sb = {
   async signIn(email, password) {
@@ -34,14 +34,9 @@ const sb = {
       "Content-Type": "application/json",
       "Prefer": "return=representation"
     };
-    // Para requisições anônimas, enviamos apenas o apikey.
-    // O Authorization Bearer só é enviado se houver um token de usuário logado.
-    // A chave publishable (sb_publishable_...) não é um JWT, então NÃO deve
-    // ser enviada como Bearer — isso faz o Supabase falhar ao resolver a role
-    // "anon" e o RLS acaba barrando a requisição.
-    if (token) {
-      headers["Authorization"] = "Bearer " + token;
-    }
+    // Agora SUPABASE_KEY é o JWT legacy "anon", então pode ir no Authorization
+    // com segurança — é assim que o Supabase resolve a role "anon" via fetch direto.
+    headers["Authorization"] = "Bearer " + (token || SUPABASE_KEY);
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
       method, headers, body: body ? JSON.stringify(body) : undefined
     });
