@@ -1,6 +1,8 @@
 /* ===== Supabase config — Kerllen Rodrigues Nutrição ===== */
 const SUPABASE_URL = "https://zuxugspnhjyjjygfbggc.supabase.co";
-const SUPABASE_KEY = "sb_publishable_WJygvlkvVbVnHbx_M8J2EQ_b8dskTps";
+// A chave abaixo parece estar incorreta ou expirada. 
+// O usuário deve fornecer a chave correta do Supabase (anon key).
+const SUPABASE_KEY = "SUA_ANON_KEY_AQUI";
 
 const sb = {
   async signIn(email, password) {
@@ -34,11 +36,23 @@ const sb = {
       "Content-Type": "application/json",
       "Prefer": "return=representation"
     };
+    // Para requisições anônimas (sem token de usuário logado), 
+    // usamos a SUPABASE_KEY tanto no apikey quanto no Authorization Bearer.
     headers["Authorization"] = "Bearer " + (token || SUPABASE_KEY);
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
       method, headers, body: body ? JSON.stringify(body) : undefined
     });
-    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || r.statusText); }
+    if (!r.ok) { 
+      const e = await r.json().catch(() => ({})); 
+      console.error("ERRO SUPABASE DETALHADO:", {
+        status: r.status,
+        statusText: r.statusText,
+        error: e,
+        path: path,
+        body: body
+      });
+      throw new Error(e.message || r.statusText); 
+    }
     return r.status === 204 ? null : r.json();
   },
 

@@ -131,15 +131,19 @@ async function enviar() {
   if (!validaAtual()) return;
   const data = coletar();
   btnAvancar.disabled = true;
+  console.log("DADOS COLETADOS PARA ENVIO:", data);
   try {
-    await sb.saveAnamnese({
-      nome: data.identificacao.nome,
-      telefone: data.identificacao.telefone,
-      sexo: data.identificacao.sexo,
-      idade: data.identificacao.idade ? +data.identificacao.idade : null,
-      respostas: data.respostas,
-      treinos: data.treinos
-    });
+    // Teste de envio simplificado para diagnóstico
+    const payload = {
+      nome: data.identificacao.nome || "Sem nome",
+      telefone: data.identificacao.telefone || "",
+      sexo: data.identificacao.sexo || "",
+      idade: data.identificacao.idade ? parseInt(data.identificacao.idade) : null,
+      respostas: data.respostas || {},
+      treinos: data.treinos || {}
+    };
+    console.log("PAYLOAD FINAL:", payload);
+    await sb.saveAnamnese(payload);
 
     form.hidden = true;
     document.querySelector(".progress").hidden = true;
