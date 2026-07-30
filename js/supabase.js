@@ -109,6 +109,9 @@ const sb = {
   getPacientes:    ()     => sb._req("GET",   "pacientes?order=nome.asc",        null, true),
   createPaciente:  (d)    => sb._req("POST",  "pacientes",                       d,    true),
   updatePaciente:  (id,d) => sb._req("PATCH", `pacientes?id=eq.${id}`,           d,    true),
+  deletePaciente:  (id)   => sb._req("DELETE", `pacientes?id=eq.${id}`,           null, true),
+
+  deleteLead:      (id)   => sb._req("DELETE", `leads?id=eq.${id}`,               null, true),
 
   addEvolucao:     (d)    => sb._req("POST",  "evolucao",                        d,    true),
   getEvolucao:     (id)   => sb._req("GET",   `evolucao?paciente_id=eq.${id}&order=data.desc`, null, true),

@@ -65,7 +65,7 @@ create policy "public insere leads"     on leads     for insert to anon        w
 create policy "public insere anamneses" on anamneses for insert to anon        with check (true);
 
 -- Somente usuarios logados (a nutricionista) leem/gerenciam tudo
-create policy "logado le leads"      on leads     for select to authenticated using (true);
+create policy "logado gerencia leads" on leads     for all    to authenticated using (true) with check (true);
 create policy "logado le anamneses"  on anamneses for select to authenticated using (true);
 create policy "logado gerencia pac"  on pacientes for all    to authenticated using (true) with check (true);
 create policy "logado gerencia cons" on consultas for all    to authenticated using (true) with check (true);

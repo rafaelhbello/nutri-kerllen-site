@@ -117,7 +117,9 @@ function renderPacientes() {
       <td>${esc(p.objetivo) || "—"}</td>
       <td><span class="badge ${p.anamnese === "completa" ? "badge--ok" : "badge--warn"}">${p.anamnese === "completa" ? "Completa" : "Pendente"}</span></td>
       <td><span class="badge ${p.status === "ativo" ? "badge--ok" : "badge--off"}">${p.status === "ativo" ? "Ativo" : "Inativo"}</span></td>
-      <td>›</td>
+      <td class="td-acoes">
+        <button class="btn-delete" onclick="event.stopPropagation(); confirmarExcluirPaciente(${p.id}, '${esc(p.nome)}')">🗑</button>
+      </td>
     </tr>`).join("");
   tbody.querySelectorAll("tr").forEach(tr => tr.addEventListener("click", () => abrirPerfil(+tr.dataset.id)));
 }
@@ -149,7 +151,9 @@ function renderLeads() {
       <td>${esc(l.objetivo) || "—"}</td>
       <td><span class="badge ${temAnamnese ? "badge--ok" : "badge--warn"}">${temAnamnese ? "Respondida" : "Sem anamnese"}</span></td>
       <td>${new Date(l.created_at).toLocaleDateString("pt-BR")}</td>
-      <td>›</td>
+      <td class="td-acoes">
+        <button class="btn-delete" onclick="event.stopPropagation(); confirmarExcluirLead(${l.id}, '${esc(l.nome)}')">🗑</button>
+      </td>
     </tr>`;
   }).join("");
   tb.querySelectorAll("tr").forEach(tr =>
@@ -418,5 +422,30 @@ document.getElementById("formEvolucao").addEventListener("submit", async e => {
 document.querySelectorAll(".modal").forEach(m => {
   m.addEventListener("click", e => { if (e.target === m || e.target.hasAttribute("data-close")) m.hidden = true; });
 });
+
+/* ---------- Exclusão ---------- */
+async function confirmarExcluirPaciente(id, nome) {
+  if (!confirm(`Tem certeza que deseja excluir o paciente "${nome}"?\nEsta ação é irreversível e excluirá todo o histórico e prontuário.`)) return;
+  try {
+    await sb.deletePaciente(id);
+    pacientesCache = pacientesCache.filter(p => p.id !== id);
+    renderDashboard();
+    renderPacientes();
+  } catch (err) {
+    avisoErro(err);
+  }
+}
+
+async function confirmarExcluirLead(id, nome) {
+  if (!confirm(`Tem certeza que deseja excluir o lead de "${nome}"?`)) return;
+  try {
+    await sb.deleteLead(id);
+    leadsCache = leadsCache.filter(l => l.id !== id);
+    renderDashboard();
+    renderLeads();
+  } catch (err) {
+    avisoErro(err);
+  }
+}
 
 carregarTudo();
