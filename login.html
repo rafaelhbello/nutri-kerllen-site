@@ -93,12 +93,23 @@
 
   <script src="js/supabase.js"></script>
   <script>
-    /* Se já estiver logado, vai direto pro painel */
-    if (sb.getSession()) window.location.href = "painel.html";
-
     const form = document.getElementById("loginForm");
     const errBox = document.getElementById("loginError");
     const btn = document.getElementById("btnLogin");
+
+    /* Aviso quando o painel devolveu a usuária pra cá por sessão vencida */
+    if (new URLSearchParams(location.search).get("motivo") === "expirada") {
+      errBox.textContent = "Sua sessão expirou. Entre novamente para continuar.";
+      errBox.hidden = false;
+    }
+
+    /* Descarta sessão vencida sem renovação possível (evita ida e volta com o painel) */
+    const sessao = sb.getSession();
+    if (sessao && sessao.expires_at && Date.now() > sessao.expires_at && !sessao.refresh_token) {
+      localStorage.removeItem("kr_session");
+    } else if (sessao) {
+      window.location.href = "painel.html";
+    }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
