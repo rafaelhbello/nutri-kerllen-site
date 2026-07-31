@@ -500,7 +500,9 @@ async function abrirPerfil(id) {
   ].map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v) || "—"}</dd></div>`).join("");
   // Auto-correção ao exibir: se for menor que 10, mostra em metros para o usuário
   const alturaExibicao = atual.altura_cm && atual.altura_cm < 10 ? (atual.altura_cm).toFixed(2) : atual.altura_cm;
-  document.getElementById("perfilAltura").value = alturaExibicao || "";
+  // Exibir altura corrigida se for em metros
+  const alturaParaExibir = atual.altura_cm && atual.altura_cm < 10 ? (atual.altura_cm).toFixed(2) : atual.altura_cm;
+  document.getElementById("perfilAltura").value = alturaParaExibir || "";
   document.getElementById("perfilMetaPeso").value = atual.meta_peso || "";
   document.getElementById("perfilObsNutri").value = atual.observacoes_nutri || "";
 
@@ -509,6 +511,29 @@ async function abrirPerfil(id) {
     ? `<div class="lead-secao"><h3>Respostas da anamnese</h3>${blocoRespostas(a.respostas)}</div>
        <div class="lead-secao"><h3>Atividade física semanal</h3>${blocoTreinos(a.treinos)}</div>`
     : `<p class="lead-vazio">Este paciente ainda não preencheu o formulário de anamnese.</p>`;
+  
+  // Sincronização automática: se a anamnese tem peso/altura e o perfil não, copia para o perfil
+  if (a && a.respostas) {
+    const atualizacoes = {};
+    if (a.respostas.peso && !atual.peso_anamnese) {
+      atualizacoes.peso_anamnese = parseFloat(a.respostas.peso);
+    }
+    if (a.respostas.altura && !atual.altura_cm) {
+      let altura = parseFloat(a.respostas.altura);
+      // Auto-correção: se for menor que 10, assume que foi digitado em metros
+      if (altura < 10) altura = altura * 100;
+      atualizacoes.altura_cm = altura;
+    }
+    if (Object.keys(atualizacoes).length > 0) {
+      try {
+        await sb.updatePaciente(atual.id, atualizacoes);
+        Object.assign(atual, atualizacoes);
+      } catch (err) {
+        console.error("Erro ao sincronizar dados da anamnese:", err);
+      }
+    }
+  }
+  
   renderIA(a);
 
   modalPerfil.hidden = false;
@@ -555,12 +580,15 @@ function renderResumo() {
   // Auto-correção de altura: se for menor que 10, assume que foi digitado em metros
   let alturaCorrigida = atual.altura_cm;
   if (alturaCorrigida && alturaCorrigida < 10) {
-    alturaCorrigida = alturaCorrigida * 100;
+    alturaCorrigida = alturaCorrigida * 100; // Converte para cm para o cálculo
   }
   
   // Fallback de peso: usa o último registro de evolução, ou o peso da anamnese
+  // Fallback de peso: usa o último registro de evolução, ou o peso da anamnese
   const pesoParaIMC = ultimo?.peso || (atual.peso_anamnese ? atual.peso_anamnese : null);
-  const imcAtual = pesoParaIMC && alturaCorrigida ? imc(pesoParaIMC, alturaCorrigida) : null;
+  
+  // Calcula IMC apenas se tiver peso E altura
+  const imcAtual = (pesoParaIMC && alturaCorrigida && alturaCorrigida >= 50) ? imc(pesoParaIMC, alturaCorrigida) : null;
   const cs = (atual.consultas || []).slice().sort((a, b) => (a.data + (a.hora||"")).localeCompare(b.data + (b.hora||"")));
   const hoje = hojeISO();
   const proxima = cs.find(c => c.data >= hoje && c.status !== "cancelada");
@@ -568,6 +596,7 @@ function renderResumo() {
   const pendMetas = (atual.metasLista || []).filter(m => m.status !== "concluida" && m.status !== "abandonada");
 
   const cards = [
+    ["Altura", alturaCorrigida ? (alturaCorrigida < 10 ? `${alturaCorrigida.toFixed(2)} m` : `${alturaCorrigida} cm`) : "—", ""],
     ["Peso atual", ultimo ? `${ultimo.peso} kg` : (pesoParaIMC ? `${pesoParaIMC} kg (anamnese)` : "—"), ultimo ? fmt(ultimo.data) : ""],
     ["IMC", imcAtual ? imcAtual.toFixed(1) : "—", imcAtual ? classificaIMC(imcAtual) : (alturaCorrigida ? "Registre o peso" : "Informe a altura")],
     ["% Gordura", ultimo?.percentual_gordura ? `${ultimo.percentual_gordura}%` : "—", ""],
@@ -575,7 +604,7 @@ function renderResumo() {
     ["Meta de peso", atual.meta_peso ? `${atual.meta_peso} kg` : "—", ""],
     ["Próxima consulta", proxima ? fmt(proxima.data) + (proxima.hora ? ` às ${proxima.hora.slice(0,5)}` : "") : "Nenhuma agendada", ""],
     ["Última consulta", ultimaRealizada ? fmt(ultimaRealizada.data) : "—", ""],
-    ["Metas em andamento", pendMetas.length, ""]
+    ["Metas em andamento", pendMetas.length, ""],
   ];
   div.innerHTML = cards.map(([label, valor, sub]) => `
     <div class="resumo-card">
