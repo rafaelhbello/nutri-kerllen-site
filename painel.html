@@ -244,6 +244,9 @@
 
       <!-- EVOLUÇÃO FÍSICA -->
       <div class="tabpane" id="tab-evolucao">
+        <div class="chart-wrap"><canvas id="chartPeso"></canvas><p class="chart-empty" id="chartPesoEmpty" hidden>Ainda não há registros de peso suficientes para o gráfico.</p></div>
+        <div class="chart-wrap"><canvas id="chartComposicao"></canvas><p class="chart-empty" id="chartComposicaoEmpty" hidden>Ainda não há registros de % gordura ou massa muscular.</p></div>
+
         <h3>Peso, IMC, % gordura e massa muscular</h3>
         <form class="inline-form" id="formEvolucao">
           <input type="date" name="data" required>
@@ -347,6 +350,7 @@
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/painel.js"></script>
 </body>

@@ -122,6 +122,17 @@
 .historico li, .evolucao li { align-items: flex-start; flex-wrap: wrap; }
 .historico li .badge { margin-right: .35rem; }
 
+/* Gráficos de evolução */
+.chart-wrap {
+  background: #fff; border: 1px solid var(--line); border-radius: 14px;
+  padding: 1rem 1.1rem; margin-bottom: 1.2rem; height: 240px; position: relative;
+}
+.chart-wrap canvas { max-height: 100%; }
+.chart-empty {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  color: var(--muted); font-size: .88rem; text-align: center; padding: 1rem;
+}
+
 @media (max-width: 900px) {
   .resumo-grid { grid-template-columns: repeat(2, 1fr); }
 }

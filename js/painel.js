@@ -467,11 +467,12 @@ function renderResumo() {
     </div>`).join("");
 }
 
-document.getElementById("salvarDadosExtra").addEventListener("click", () => {
-  persistAtual({
+document.getElementById("salvarDadosExtra").addEventListener("click", async () => {
+  await persistAtual({
     altura_cm: document.getElementById("perfilAltura").value ? +document.getElementById("perfilAltura").value : null,
     meta_peso: document.getElementById("perfilMetaPeso").value ? +document.getElementById("perfilMetaPeso").value : null
   });
+  renderEvolucao(); // altura/meta afetam o cálculo de IMC e a linha de meta no gráfico
 });
 document.getElementById("salvarObsNutri").addEventListener("click", () => {
   persistAtual({ observacoes_nutri: document.getElementById("perfilObsNutri").value });
@@ -574,6 +575,9 @@ document.getElementById("formLembrete").addEventListener("submit", async e => {
 });
 
 /* ---------- Evolução física ---------- */
+let chartPeso = null;
+let chartComposicao = null;
+
 function renderEvolucao() {
   const ul = document.getElementById("perfilEvolucao");
   const ev = (atual.evolucao || []).slice().sort((a, b) => b.data.localeCompare(a.data));
@@ -586,6 +590,88 @@ function renderEvolucao() {
     ].filter(Boolean).join(" · ");
     return `<li><strong>${r.peso} kg</strong> ${fmt(r.data)}${extras ? " — " + extras : ""}${r.obs ? " — " + esc(r.obs) : ""}</li>`;
   }).join("") : `<li class="empty-li">Nenhum registro de evolução ainda.</li>`;
+
+  renderGraficosEvolucao();
+}
+
+function renderGraficosEvolucao() {
+  if (typeof Chart === "undefined") return; // biblioteca não carregou (ex.: sem internet)
+
+  const ev = (atual.evolucao || []).slice().sort((a, b) => a.data.localeCompare(b.data));
+  const labels = ev.map(r => fmt(r.data));
+
+  // ---- Gráfico 1: Peso, meta de peso e IMC ----
+  const pesoEmpty = document.getElementById("chartPesoEmpty");
+  const canvasPeso = document.getElementById("chartPeso");
+  if (chartPeso) { chartPeso.destroy(); chartPeso = null; }
+  if (ev.length < 2) {
+    pesoEmpty.hidden = false; canvasPeso.style.display = "none";
+  } else {
+    pesoEmpty.hidden = true; canvasPeso.style.display = "block";
+    const datasetsPeso = [
+      {
+        label: "Peso (kg)", data: ev.map(r => r.peso), yAxisID: "y",
+        borderColor: "#a8823a", backgroundColor: "#a8823a", tension: .25
+      }
+    ];
+    if (atual.meta_peso) {
+      datasetsPeso.push({
+        label: "Meta de peso (kg)", data: ev.map(() => atual.meta_peso), yAxisID: "y",
+        borderColor: "#c6a15b", borderDash: [6, 4], pointRadius: 0
+      });
+    }
+    if (atual.altura_cm) {
+      datasetsPeso.push({
+        label: "IMC", data: ev.map(r => { const v = imc(r.peso, atual.altura_cm); return v ? +v.toFixed(1) : null; }),
+        yAxisID: "y1", borderColor: "#7d7668", tension: .25
+      });
+    }
+    chartPeso = new Chart(canvasPeso, {
+      type: "line",
+      data: { labels, datasets: datasetsPeso },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        scales: {
+          y:  { type: "linear", position: "left", title: { display: true, text: "kg" } },
+          y1: { type: "linear", position: "right", title: { display: true, text: "IMC" }, grid: { drawOnChartArea: false } }
+        }
+      }
+    });
+  }
+
+  // ---- Gráfico 2: % gordura e massa muscular ----
+  const compEmpty = document.getElementById("chartComposicaoEmpty");
+  const canvasComp = document.getElementById("chartComposicao");
+  if (chartComposicao) { chartComposicao.destroy(); chartComposicao = null; }
+  const temGordura = ev.some(r => r.percentual_gordura != null);
+  const temMassa = ev.some(r => r.massa_muscular != null);
+  if (!temGordura && !temMassa) {
+    compEmpty.hidden = false; canvasComp.style.display = "none";
+  } else {
+    compEmpty.hidden = true; canvasComp.style.display = "block";
+    const datasetsComp = [];
+    if (temGordura) datasetsComp.push({
+      label: "% Gordura", data: ev.map(r => r.percentual_gordura), yAxisID: "y",
+      borderColor: "#b3564d", backgroundColor: "#b3564d", tension: .25, spanGaps: true
+    });
+    if (temMassa) datasetsComp.push({
+      label: "Massa muscular (kg)", data: ev.map(r => r.massa_muscular), yAxisID: "y1",
+      borderColor: "#3e7d3e", backgroundColor: "#3e7d3e", tension: .25, spanGaps: true
+    });
+    chartComposicao = new Chart(canvasComp, {
+      type: "line",
+      data: { labels, datasets: datasetsComp },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        scales: {
+          y:  { type: "linear", position: "left", title: { display: true, text: "% gordura" } },
+          y1: { type: "linear", position: "right", title: { display: true, text: "kg" }, grid: { drawOnChartArea: false } }
+        }
+      }
+    });
+  }
 }
 
 document.getElementById("formEvolucao").addEventListener("submit", async e => {
