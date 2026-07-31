@@ -363,6 +363,111 @@ function classificaIMC(v) {
   return "Obesidade grau III";
 }
 
+/* ---------- Assistente IA (análise automática da anamnese) ---------- */
+function treinosTexto(treinos) {
+  const t = treinos || {};
+  const linhas = Object.keys(t).map(dia => {
+    const d = t[dia] || {};
+    const txt = [d.atividade, d.intensidade].filter(Boolean).join(" · ");
+    return txt ? `${dia}: ${txt}` : null;
+  }).filter(Boolean);
+  return linhas.length ? linhas.join("\n") : "Nenhum treino informado.";
+}
+
+function textoAnamneseParaIA(paciente, anamnese) {
+  const usados = new Set();
+  const linhas = [];
+  ROTULOS_ANAMNESE.forEach(([chave, rotulo]) => {
+    usados.add(chave);
+    const v = valorLegivel((anamnese.respostas || {})[chave]).trim();
+    if (v) linhas.push(`${rotulo}: ${v}`);
+  });
+  Object.keys(anamnese.respostas || {}).forEach(k => {
+    if (usados.has(k)) return;
+    const v = valorLegivel(anamnese.respostas[k]).trim();
+    if (v) linhas.push(`${k}: ${v}`);
+  });
+
+  return [
+    `Nome: ${paciente.nome || "—"}`,
+    `Idade: ${anamnese.idade || "—"}`,
+    `Sexo: ${anamnese.sexo || "—"}`,
+    `Objetivo cadastrado: ${paciente.objetivo || "—"}`,
+    "",
+    "Respostas da anamnese:",
+    ...linhas,
+    "",
+    "Atividade física semanal:",
+    treinosTexto(anamnese.treinos)
+  ].join("\n");
+}
+
+function renderIA(anamnese) {
+  const conteudo = document.getElementById("iaConteudo");
+  const dataSpan = document.getElementById("iaDataGeracao");
+
+  if (!anamnese) {
+    conteudo.innerHTML = `<p class="lead-vazio">É necessário que o paciente tenha uma anamnese respondida para gerar a análise.</p>`;
+    dataSpan.textContent = "";
+    return;
+  }
+
+  dataSpan.textContent = atual.ai_last_generated_at
+    ? `Gerada em ${new Date(atual.ai_last_generated_at).toLocaleString("pt-BR")}`
+    : "";
+
+  const temAnalise = !!atual.ai_last_generated_at;
+  const perguntas = Array.isArray(atual.ai_consultation_questions) ? atual.ai_consultation_questions : [];
+
+  conteudo.innerHTML = `
+    ${temAnalise ? `
+      <div class="ia-secao">
+        <h4>Resumo da anamnese</h4>
+        <p>${esc(atual.ai_summary || "—")}</p>
+      </div>
+      <div class="ia-secao">
+        <h4>Sinais e pontos de atenção</h4>
+        <p>${esc(atual.ai_attention_points || "—")}</p>
+      </div>
+      <div class="ia-secao">
+        <h4>Consulta assistida — perguntas sugeridas</h4>
+        <ul>${perguntas.map(p => `<li>${esc(p)}</li>`).join("") || "<li>—</li>"}</ul>
+      </div>
+    ` : ""}
+    <button type="button" class="btn btn--gold" id="btnGerarIA">
+      ${temAnalise ? "🔄 Atualizar análise" : "✨ Analisar Anamnese com IA"}
+    </button>
+  `;
+
+  document.getElementById("btnGerarIA").addEventListener("click", () => gerarAnaliseIA(anamnese));
+}
+
+async function gerarAnaliseIA(anamnese) {
+  const conteudo = document.getElementById("iaConteudo");
+  const btnAnterior = conteudo.innerHTML;
+  conteudo.innerHTML = `<div class="ia-loading"><span class="ia-spinner"></span> Analisando a anamnese com IA — isso pode levar alguns segundos…</div>`;
+
+  try {
+    const accessToken = await sb.getValidToken();
+    const texto = textoAnamneseParaIA(atual, anamnese);
+    const r = await fetch("/api/analisar-anamnese", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pacienteId: atual.id, textoAnamnese: texto, accessToken })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || "Não foi possível gerar a análise agora.");
+
+    Object.assign(atual, data);
+    pacientesCache = pacientesCache.map(p => (p.id === atual.id ? { ...p, ...data } : p));
+    renderIA(anamnese);
+  } catch (err) {
+    conteudo.innerHTML = `<p class="ia-erro">${esc(err.message || "Não foi possível gerar a análise agora. Tente novamente em instantes.")}</p>` + btnAnterior;
+    const btn = document.getElementById("btnGerarIA");
+    if (btn) btn.addEventListener("click", () => gerarAnaliseIA(anamnese));
+  }
+}
+
 /* ---------- Navegação por abas dentro do perfil ---------- */
 document.querySelectorAll("#modalPerfil .tab").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -402,6 +507,7 @@ async function abrirPerfil(id) {
     ? `<div class="lead-secao"><h3>Respostas da anamnese</h3>${blocoRespostas(a.respostas)}</div>
        <div class="lead-secao"><h3>Atividade física semanal</h3>${blocoTreinos(a.treinos)}</div>`
     : `<p class="lead-vazio">Este paciente ainda não preencheu o formulário de anamnese.</p>`;
+  renderIA(a);
 
   modalPerfil.hidden = false;
 
