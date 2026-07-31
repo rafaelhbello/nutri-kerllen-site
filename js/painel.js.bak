@@ -62,7 +62,6 @@ document.querySelectorAll(".side-link[data-view]").forEach(btn => {
     btn.classList.add("active");
     document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
     document.getElementById("view-" + btn.dataset.view).classList.add("active");
-    if (btn.dataset.view === "agenda") renderAgendaGeral();
   });
 });
 
@@ -363,111 +362,6 @@ function classificaIMC(v) {
   return "Obesidade grau III";
 }
 
-/* ---------- Assistente IA (análise automática da anamnese) ---------- */
-function treinosTexto(treinos) {
-  const t = treinos || {};
-  const linhas = Object.keys(t).map(dia => {
-    const d = t[dia] || {};
-    const txt = [d.atividade, d.intensidade].filter(Boolean).join(" · ");
-    return txt ? `${dia}: ${txt}` : null;
-  }).filter(Boolean);
-  return linhas.length ? linhas.join("\n") : "Nenhum treino informado.";
-}
-
-function textoAnamneseParaIA(paciente, anamnese) {
-  const usados = new Set();
-  const linhas = [];
-  ROTULOS_ANAMNESE.forEach(([chave, rotulo]) => {
-    usados.add(chave);
-    const v = valorLegivel((anamnese.respostas || {})[chave]).trim();
-    if (v) linhas.push(`${rotulo}: ${v}`);
-  });
-  Object.keys(anamnese.respostas || {}).forEach(k => {
-    if (usados.has(k)) return;
-    const v = valorLegivel(anamnese.respostas[k]).trim();
-    if (v) linhas.push(`${k}: ${v}`);
-  });
-
-  return [
-    `Nome: ${paciente.nome || "—"}`,
-    `Idade: ${anamnese.idade || "—"}`,
-    `Sexo: ${anamnese.sexo || "—"}`,
-    `Objetivo cadastrado: ${paciente.objetivo || "—"}`,
-    "",
-    "Respostas da anamnese:",
-    ...linhas,
-    "",
-    "Atividade física semanal:",
-    treinosTexto(anamnese.treinos)
-  ].join("\n");
-}
-
-function renderIA(anamnese) {
-  const conteudo = document.getElementById("iaConteudo");
-  const dataSpan = document.getElementById("iaDataGeracao");
-
-  if (!anamnese) {
-    conteudo.innerHTML = `<p class="lead-vazio">É necessário que o paciente tenha uma anamnese respondida para gerar a análise.</p>`;
-    dataSpan.textContent = "";
-    return;
-  }
-
-  dataSpan.textContent = atual.ai_last_generated_at
-    ? `Gerada em ${new Date(atual.ai_last_generated_at).toLocaleString("pt-BR")}`
-    : "";
-
-  const temAnalise = !!atual.ai_last_generated_at;
-  const perguntas = Array.isArray(atual.ai_consultation_questions) ? atual.ai_consultation_questions : [];
-
-  conteudo.innerHTML = `
-    ${temAnalise ? `
-      <div class="ia-secao">
-        <h4>Resumo da anamnese</h4>
-        <p>${esc(atual.ai_summary || "—")}</p>
-      </div>
-      <div class="ia-secao">
-        <h4>Sinais e pontos de atenção</h4>
-        <p>${esc(atual.ai_attention_points || "—")}</p>
-      </div>
-      <div class="ia-secao">
-        <h4>Consulta assistida — perguntas sugeridas</h4>
-        <ul>${perguntas.map(p => `<li>${esc(p)}</li>`).join("") || "<li>—</li>"}</ul>
-      </div>
-    ` : ""}
-    <button type="button" class="btn btn--gold" id="btnGerarIA">
-      ${temAnalise ? "🔄 Atualizar análise" : "✨ Analisar Anamnese com IA"}
-    </button>
-  `;
-
-  document.getElementById("btnGerarIA").addEventListener("click", () => gerarAnaliseIA(anamnese));
-}
-
-async function gerarAnaliseIA(anamnese) {
-  const conteudo = document.getElementById("iaConteudo");
-  const btnAnterior = conteudo.innerHTML;
-  conteudo.innerHTML = `<div class="ia-loading"><span class="ia-spinner"></span> Analisando a anamnese com IA — isso pode levar alguns segundos…</div>`;
-
-  try {
-    const accessToken = await sb.getValidToken();
-    const texto = textoAnamneseParaIA(atual, anamnese);
-    const r = await fetch("/api/analisar-anamnese", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pacienteId: atual.id, textoAnamnese: texto, accessToken })
-    });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error || "Não foi possível gerar a análise agora.");
-
-    Object.assign(atual, data);
-    pacientesCache = pacientesCache.map(p => (p.id === atual.id ? { ...p, ...data } : p));
-    renderIA(anamnese);
-  } catch (err) {
-    conteudo.innerHTML = `<p class="ia-erro">${esc(err.message || "Não foi possível gerar a análise agora. Tente novamente em instantes.")}</p>` + btnAnterior;
-    const btn = document.getElementById("btnGerarIA");
-    if (btn) btn.addEventListener("click", () => gerarAnaliseIA(anamnese));
-  }
-}
-
 /* ---------- Navegação por abas dentro do perfil ---------- */
 document.querySelectorAll("#modalPerfil .tab").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -507,7 +401,6 @@ async function abrirPerfil(id) {
     ? `<div class="lead-secao"><h3>Respostas da anamnese</h3>${blocoRespostas(a.respostas)}</div>
        <div class="lead-secao"><h3>Atividade física semanal</h3>${blocoTreinos(a.treinos)}</div>`
     : `<p class="lead-vazio">Este paciente ainda não preencheu o formulário de anamnese.</p>`;
-  renderIA(a);
 
   modalPerfil.hidden = false;
 
@@ -574,6 +467,13 @@ function renderResumo() {
     </div>`).join("");
 }
 
+document.getElementById("salvarDadosExtra").addEventListener("click", async () => {
+  await persistAtual({
+    altura_cm: document.getElementById("perfilAltura").value ? +document.getElementById("perfilAltura").value : null,
+    meta_peso: document.getElementById("perfilMetaPeso").value ? +document.getElementById("perfilMetaPeso").value : null
+  });
+  renderEvolucao(); // altura/meta afetam o cálculo de IMC e a linha de meta no gráfico
+});
 document.getElementById("salvarObsNutri").addEventListener("click", () => {
   persistAtual({ observacoes_nutri: document.getElementById("perfilObsNutri").value });
 });
@@ -966,64 +866,6 @@ document.getElementById("formMeta").addEventListener("submit", async e => {
   } catch (err) { avisoErro(err); }
 });
 
-/* ---------- Agenda geral (Fase 4) ---------- */
-async function renderAgendaGeral() {
-  const ulC = document.getElementById("agendaLista");
-  const ulL = document.getElementById("agendaLembretes");
-  ulC.innerHTML = `<li class="empty-li">Carregando…</li>`;
-  ulL.innerHTML = `<li class="empty-li">Carregando…</li>`;
-  try {
-    const [consultas, lembretes] = await Promise.all([
-      sb.getConsultasFuturas(hojeISO()), sb.getLembretesPendentes()
-    ]);
-    const nomeDe = pid => pacientesCache.find(p => p.id === pid)?.nome || "Paciente";
-
-    ulC.innerHTML = consultas.length ? consultas.map(c => `
-      <li data-id="${c.id}">
-        <div style="flex:1;cursor:pointer" data-abrir-paciente="${c.paciente_id}">
-          <time>${fmt(c.data)}${c.hora ? " " + c.hora.slice(0,5) : ""}</time>
-          <strong>${esc(nomeDe(c.paciente_id))}</strong>
-          ${c.tipo ? `<span class="badge badge--off">${esc(c.tipo)}</span>` : ""}
-          <span class="badge ${STATUS_BADGE[c.status] || "badge--off"}">${STATUS_LABEL[c.status] || c.status}</span>
-          <div style="font-size:.82rem;color:var(--muted)">${esc(c.resumo) || ""}</div>
-        </div>
-        <div class="lead-acoes" style="margin:0">
-          <button type="button" class="btn btn--ghost" data-agenda-status="realizada" data-id="${c.id}">Realizada</button>
-          <button type="button" class="btn btn--ghost" data-agenda-status="falta" data-id="${c.id}">Falta</button>
-          <button type="button" class="btn btn--ghost" data-agenda-status="cancelada" data-id="${c.id}">Cancelar</button>
-        </div>
-      </li>`).join("") : `<li class="empty-li">Nenhuma consulta agendada.</li>`;
-
-    ulL.innerHTML = lembretes.length ? lembretes.map(l => `
-      <li data-id="${l.id}">
-        <div style="flex:1"><strong>${fmt(l.data)}</strong> ${esc(nomeDe(l.paciente_id))} — ${esc(l.texto)}</div>
-        <button type="button" class="btn btn--ghost" data-agenda-lembrete-ok="${l.id}">Concluir</button>
-      </li>`).join("") : `<li class="empty-li">Nenhum lembrete pendente. ✦</li>`;
-
-    ulC.querySelectorAll("[data-abrir-paciente]").forEach(el => el.addEventListener("click", () => {
-      document.querySelectorAll(".side-link[data-view]").forEach(b => b.classList.remove("active"));
-      document.querySelector('.side-link[data-view="pacientes"]').classList.add("active");
-      document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-      document.getElementById("view-pacientes").classList.add("active");
-      abrirPerfil(+el.dataset.abrirPaciente);
-    }));
-    ulC.querySelectorAll("[data-agenda-status]").forEach(btn => btn.addEventListener("click", async () => {
-      try {
-        await sb.updateConsulta(+btn.dataset.id, { status: btn.dataset.agendaStatus });
-        renderAgendaGeral();
-      } catch (err) { avisoErro(err); }
-    }));
-    ulL.querySelectorAll("[data-agenda-lembrete-ok]").forEach(btn => btn.addEventListener("click", async () => {
-      try {
-        await sb.updateLembrete(+btn.dataset.agendaLembreteOk, { concluido: true });
-        renderAgendaGeral();
-      } catch (err) { avisoErro(err); }
-    }));
-  } catch (err) {
-    avisoErro(err);
-  }
-}
-
 /* Fechar modais */
 document.querySelectorAll(".modal").forEach(m => {
   m.addEventListener("click", e => { if (e.target === m || e.target.hasAttribute("data-close")) m.hidden = true; });
@@ -1069,33 +911,3 @@ async function confirmarExcluirEvolucao(id) {
 }
 
 carregarTudo();
-
-document.getElementById("salvarDadosExtra").addEventListener("click", async () => {
-  const btn = document.getElementById("salvarDadosExtra");
-  const altura = document.getElementById("perfilAltura").value ? +document.getElementById("perfilAltura").value : null;
-  const metaPeso = document.getElementById("perfilMetaPeso").value ? +document.getElementById("perfilMetaPeso").value : null;
-  
-  if (!altura && !metaPeso) {
-    alert("Preencha pelo menos a altura ou a meta de peso.");
-    return;
-  }
-  
-  const textOriginal = btn.textContent;
-  btn.textContent = "Salvando...";
-  btn.disabled = true;
-  
-  try {
-    await persistAtual({ altura_cm: altura, meta_peso: metaPeso });
-    btn.textContent = "✓ Salvo!";
-    setTimeout(() => { btn.textContent = textOriginal; btn.disabled = false; }, 2000);
-    renderEvolucao();
-    renderResumo();
-  } catch (err) {
-    btn.textContent = textOriginal;
-    btn.disabled = false;
-    avisoErro(err);
-  }
-});
-document.getElementById("salvarObsNutri").addEventListener("click", () => {
-  persistAtual({ observacoes_nutri: document.getElementById("perfilObsNutri").value });
-});

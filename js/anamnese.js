@@ -117,6 +117,8 @@ function coletar() {
   Object.keys(multi).forEach(k => { data.respostas[k] = multi[k].length > 1 ? multi[k] : multi[k][0]; });
 
   data.respostas.xiximetro = xixiSelecionado ? `Nível ${xixiSelecionado} de 8` : "Não informado";
+  data.respostas.peso = fd.get("peso") || null;
+  data.respostas.altura = fd.get("altura") || null;
 
   weekGrid.querySelectorAll("[data-dia]").forEach(el => {
     const dia = el.dataset.dia;
