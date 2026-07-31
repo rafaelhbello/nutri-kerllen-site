@@ -1,5 +1,28 @@
 /* ===== Anamnese em etapas · Kerllen Rodrigues Nutrição ===== */
 
+/* Estilos do rascunho (inline para não depender de CSS extra) */
+(function injectDraftStyles() {
+  if (document.getElementById("kr-draft-styles")) return;
+  const s = document.createElement("style");
+  s.id = "kr-draft-styles";
+  s.textContent = `
+    .draft-banner {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .8rem;
+      background: #fdf9ef; border: 1px solid #e8d5a3; border-radius: 14px;
+      padding: .9rem 1.2rem; margin-bottom: 1.4rem; font-size: .9rem; color: #2b2a26;
+    }
+    .draft-banner__clear {
+      border: 1.4px solid #e5e2da; background: #fff; border-radius: 10px;
+      padding: .45rem .9rem; font: 600 .8rem Inter, system-ui, sans-serif; color: #8a8578; cursor: pointer;
+    }
+    .draft-banner__clear:hover { border-color: #c6a15b; color: #a8823a; }
+    .draft-hint {
+      text-align: center; font-size: .75rem; color: #8a8578; margin: -.8rem 0 1.2rem;
+    }
+  `;
+  document.head.appendChild(s);
+})();
+
 const form = document.getElementById("anamneseForm");
 const steps = Array.from(form.querySelectorAll(".step"));
 const bar = document.getElementById("progressBar");
@@ -11,7 +34,6 @@ const DRAFT_KEY = "kr_anamnese_draft";
 
 let idx = 0;
 
-/* Etapas visíveis (o ciclo menstrual só entra se sexo = feminino) */
 function visibleSteps() {
   const sexo = form.sexo ? form.sexo.value : "";
   return steps.filter(s => !s.dataset.onlySexo || s.dataset.onlySexo === sexo);
@@ -55,7 +77,6 @@ btnVoltar.addEventListener("click", () => {
   if (idx > 0) { idx--; render(); salvarRascunho(); }
 });
 
-/* ---------- Xixímetro ---------- */
 const xixiCores = [
   { cor: "#f7f6ee", nivel: "good", texto: "Excelente! Hidratação em dia. 💧" },
   { cor: "#f5f1d8", nivel: "good", texto: "Muito bom — hidratação adequada." },
@@ -89,7 +110,6 @@ xixiCores.forEach((c, i) => {
   xixiWrap.appendChild(b);
 });
 
-/* ---------- Grade semanal de treinos ---------- */
 const dias = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 const weekGrid = document.getElementById("weekGrid");
 dias.forEach(dia => {
@@ -105,7 +125,6 @@ dias.forEach(dia => {
   weekGrid.appendChild(row);
 });
 
-/* ---------- Rascunho (salvar progresso) ---------- */
 function coletarRascunho() {
   const campos = {};
   form.querySelectorAll("input, select, textarea").forEach(el => {
@@ -266,7 +285,6 @@ weekGrid.addEventListener("change", () => {
   saveTimer = setTimeout(salvarRascunho, 200);
 });
 
-/* ---------- Envio ---------- */
 function coletar() {
   const data = { identificacao: {}, respostas: {}, treinos: {}, enviadoEm: new Date().toISOString() };
   const fd = new FormData(form);
@@ -342,12 +360,10 @@ async function enviar() {
   }
 }
 
-/* Recalcula fluxo quando o sexo muda (etapa condicional) */
 document.getElementById("campoSexo").addEventListener("change", () => {
   render();
   salvarRascunho();
 });
 
-/* Restaura rascunho se existir, depois renderiza */
 restaurarRascunho();
 render();
