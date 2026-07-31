@@ -105,6 +105,27 @@
 .datalist dt { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 .datalist dd { font-weight: 600; font-size: .92rem; }
 
+/* Perfil do paciente: modal maior + abas roláveis */
+.modal__box--perfil { width: min(880px, 100%); }
+.tabs--scroll { overflow-x: auto; flex-wrap: nowrap; }
+.tabs--scroll .tab { white-space: nowrap; }
+
+/* Resumo em cards */
+.resumo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .9rem; margin-bottom: 1.6rem; }
+.resumo-card { background: var(--off); border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: .2rem; }
+.resumo-card__label { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.resumo-card__valor { font-family: var(--serif); font-size: 1.4rem; color: var(--gold-dark); }
+.resumo-card__sub { font-size: .78rem; color: var(--muted); }
+#perfilObsNutri { width: 100%; padding: .85rem 1rem; border: 1.4px solid var(--line); border-radius: 12px; font-family: var(--sans); font-size: .92rem; resize: vertical; }
+
+/* Itens de lista com ações (consultas, lembretes, arquivos) */
+.historico li, .evolucao li { align-items: flex-start; flex-wrap: wrap; }
+.historico li .badge { margin-right: .35rem; }
+
+@media (max-width: 900px) {
+  .resumo-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 .inline-form { display: flex; gap: .6rem; margin: 1rem 0; flex-wrap: wrap; }
 .inline-form input { flex: 1; min-width: 130px; padding: .7rem .9rem; border: 1.4px solid var(--line); border-radius: 10px; font: 400 .88rem var(--sans); outline: none; }
 .inline-form input:focus { border-color: var(--gold); }

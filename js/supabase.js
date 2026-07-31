@@ -116,8 +116,93 @@ const sb = {
   addEvolucao:     (d)    => sb._req("POST",  "evolucao",                        d,    true),
   getEvolucao:     (id)   => sb._req("GET",   `evolucao?paciente_id=eq.${id}&order=data.desc`, null, true),
   addConsulta:     (d)    => sb._req("POST",  "consultas",                       d,    true),
+  updateConsulta:  (id,d) => sb._req("PATCH", `consultas?id=eq.${id}`,           d,    true),
+  deleteConsulta:  (id)   => sb._req("DELETE", `consultas?id=eq.${id}`,           null, true),
   getConsultas:    (id)   => sb._req("GET",   `consultas?paciente_id=eq.${id}&order=data.desc`, null, true),
   getConsultasPorData: (data) => sb._req("GET", `consultas?data=eq.${data}&order=id.asc`, null, true),
+
+  /* ---------- Medidas corporais ---------- */
+  addMedida:       (d)    => sb._req("POST",  "medidas_corporais",               d,    true),
+  getMedidas:      (id)   => sb._req("GET",   `medidas_corporais?paciente_id=eq.${id}&order=data.desc`, null, true),
+  deleteMedida:    (id)   => sb._req("DELETE", `medidas_corporais?id=eq.${id}`,   null, true),
+
+  /* ---------- Lembretes ---------- */
+  addLembrete:     (d)    => sb._req("POST",  "lembretes",                       d,    true),
+  getLembretes:    (id)   => sb._req("GET",   `lembretes?paciente_id=eq.${id}&order=data.asc`, null, true),
+  updateLembrete:  (id,d) => sb._req("PATCH", `lembretes?id=eq.${id}`,           d,    true),
+  deleteLembrete:  (id)   => sb._req("DELETE", `lembretes?id=eq.${id}`,           null, true),
+
+  /* ---------- Planos alimentares (histórico/registro) ---------- */
+  addPlano:        (d)    => sb._req("POST",  "planos_alimentares",              d,    true),
+  getPlanos:       (id)   => sb._req("GET",   `planos_alimentares?paciente_id=eq.${id}&order=data.desc`, null, true),
+  deletePlano:     (id)   => sb._req("DELETE", `planos_alimentares?id=eq.${id}`,  null, true),
+
+  /* ---------- Suplementação ---------- */
+  addSuplemento:   (d)    => sb._req("POST",  "suplementacao",                   d,    true),
+  getSuplementos:  (id)   => sb._req("GET",   `suplementacao?paciente_id=eq.${id}&order=data_inicio.desc.nullslast`, null, true),
+  deleteSuplemento:(id)   => sb._req("DELETE", `suplementacao?id=eq.${id}`,       null, true),
+
+  /* ---------- Metas nutricionais ---------- */
+  addMeta:         (d)    => sb._req("POST",  "metas_nutricionais",              d,    true),
+  getMetas:        (id)   => sb._req("GET",   `metas_nutricionais?paciente_id=eq.${id}&order=created_at.desc`, null, true),
+  updateMeta:      (id,d) => sb._req("PATCH", `metas_nutricionais?id=eq.${id}`,  d,    true),
+  deleteMeta:      (id)   => sb._req("DELETE", `metas_nutricionais?id=eq.${id}`,  null, true),
+
+  /* ---------- Arquivos (exames + fotos de evolução) ---------- */
+  addArquivoRow:   (d)    => sb._req("POST",  "arquivos_paciente",               d,    true),
+  getArquivos:     (id, tipo) => sb._req("GET", `arquivos_paciente?paciente_id=eq.${id}${tipo ? `&tipo=eq.${tipo}` : ""}&order=data.desc`, null, true),
+  deleteArquivoRow:(id)   => sb._req("DELETE", `arquivos_paciente?id=eq.${id}`,   null, true),
+
+  /* Upload direto no Storage (buckets privados: "exames" e "fotos-evolucao") */
+  async uploadArquivo(bucket, path, file) {
+    const token = await sb.getValidToken();
+    const r = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${encodeURI(path)}`, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + (token || SUPABASE_KEY),
+        "Content-Type": file.type || "application/octet-stream",
+        "x-upsert": "true"
+      },
+      body: file
+    });
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      throw new Error(e.message || r.statusText);
+    }
+    return path;
+  },
+
+  async getSignedUrl(bucket, path, expiresIn = 3600) {
+    const token = await sb.getValidToken();
+    const r = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/${bucket}/${encodeURI(path)}`, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + (token || SUPABASE_KEY),
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ expiresIn })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.message || r.statusText);
+    return `${SUPABASE_URL}/storage/v1${data.signedURL}`;
+  },
+
+  async deleteArquivoStorage(bucket, path) {
+    const token = await sb.getValidToken();
+    const r = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${encodeURI(path)}`, {
+      method: "DELETE",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + (token || SUPABASE_KEY)
+      }
+    });
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      throw new Error(e.message || r.statusText);
+    }
+  },
 };
 
 function requireAuth() {

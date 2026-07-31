@@ -341,9 +341,47 @@ document.getElementById("formNovo").addEventListener("submit", async e => {
 const modalPerfil = document.getElementById("modalPerfil");
 let atual = null;
 
+/* Encontra a anamnese do paciente pelo nome (mesma lógica usada para leads) */
+function anamneseDoPaciente(p) {
+  const nome = norm(p.nome);
+  return anamnesesCache.find(a => norm(a.nome) === nome) || null;
+}
+
+function imc(peso, alturaCm) {
+  if (!peso || !alturaCm) return null;
+  const m = alturaCm / 100;
+  return peso / (m * m);
+}
+function classificaIMC(v) {
+  if (v == null) return "";
+  if (v < 18.5) return "Abaixo do peso";
+  if (v < 25) return "Peso normal";
+  if (v < 30) return "Sobrepeso";
+  if (v < 35) return "Obesidade grau I";
+  if (v < 40) return "Obesidade grau II";
+  return "Obesidade grau III";
+}
+
+/* ---------- Navegação por abas dentro do perfil ---------- */
+document.querySelectorAll("#modalPerfil .tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#modalPerfil .tab").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll("#modalPerfil .tabpane").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+  });
+});
+
 async function abrirPerfil(id) {
   atual = pacientesCache.find(p => p.id === id);
   if (!atual) return;
+
+  // Sempre volta pra primeira aba ao abrir
+  document.querySelectorAll("#modalPerfil .tab").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll("#modalPerfil .tabpane").forEach(p => p.classList.remove("active"));
+  document.querySelector('#modalPerfil .tab[data-tab="resumo"]').classList.add("active");
+  document.getElementById("tab-resumo").classList.add("active");
+
   document.getElementById("perfilAvatar").textContent = initials(atual.nome);
   document.getElementById("perfilNome").textContent = atual.nome;
   document.getElementById("perfilMeta").textContent = `${atual.objetivo || "Sem objetivo definido"} · nascimento ${fmt(atual.nascimento)}`;
@@ -354,15 +392,35 @@ async function abrirPerfil(id) {
     ["WhatsApp", atual.telefone], ["E-mail", atual.email],
     ["Nascimento", fmt(atual.nascimento)], ["Objetivo", atual.objetivo]
   ].map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v) || "—"}</dd></div>`).join("");
-  document.getElementById("perfilMetas").value = atual.metas || "";
+  document.getElementById("perfilAltura").value = atual.altura_cm || "";
+  document.getElementById("perfilMetaPeso").value = atual.meta_peso || "";
+  document.getElementById("perfilObsNutri").value = atual.observacoes_nutri || "";
+
+  const a = anamneseDoPaciente(atual);
+  document.getElementById("perfilAnamnese").innerHTML = a
+    ? `<div class="lead-secao"><h3>Respostas da anamnese</h3>${blocoRespostas(a.respostas)}</div>
+       <div class="lead-secao"><h3>Atividade física semanal</h3>${blocoTreinos(a.treinos)}</div>`
+    : `<p class="lead-vazio">Este paciente ainda não preencheu o formulário de anamnese.</p>`;
+
   modalPerfil.hidden = false;
 
-  document.getElementById("perfilHistorico").innerHTML = `<li class="empty-li">Carregando…</li>`;
-  document.getElementById("perfilEvolucao").innerHTML = `<li class="empty-li">Carregando…</li>`;
+  ["perfilHistorico", "perfilEvolucao", "perfilMedidas", "perfilLembretes",
+   "perfilPlanos", "perfilSuplementos", "perfilExames", "perfilFotos", "perfilMetasLista"]
+    .forEach(elId => { document.getElementById(elId).innerHTML = `<li class="empty-li">Carregando…</li>`; });
+  document.getElementById("perfilResumo").innerHTML = "";
+
   try {
-    const [consultas, evolucao] = await Promise.all([sb.getConsultas(id), sb.getEvolucao(id)]);
-    atual.consultas = consultas; atual.evolucao = evolucao;
-    renderHistorico(); renderEvolucao();
+    const [consultas, evolucao, medidas, lembretes, planos, suplementos, exames, fotos, metas] = await Promise.all([
+      sb.getConsultas(id), sb.getEvolucao(id), sb.getMedidas(id), sb.getLembretes(id),
+      sb.getPlanos(id), sb.getSuplementos(id), sb.getArquivos(id, "exame"),
+      sb.getArquivos(id, "foto_evolucao"), sb.getMetas(id)
+    ]);
+    atual.consultas = consultas; atual.evolucao = evolucao; atual.medidas = medidas;
+    atual.lembretes = lembretes; atual.planos = planos; atual.suplementos = suplementos;
+    atual.exames = exames; atual.fotos = fotos; atual.metasLista = metas;
+    renderHistorico(); renderEvolucao(); renderMedidas(); renderLembretes();
+    renderPlanos(); renderSuplementos(); renderArquivos(); renderMetasLista();
+    renderResumo();
   } catch (err) {
     avisoErro(err);
   }
@@ -373,49 +431,347 @@ async function persistAtual(campos) {
     await sb.updatePaciente(atual.id, campos);
     Object.assign(atual, campos);
     pacientesCache = pacientesCache.map(p => (p.id === atual.id ? { ...p, ...campos } : p));
-    renderDashboard(); renderPacientes();
+    renderDashboard(); renderPacientes(); renderResumo();
   } catch (err) {
     avisoErro(err);
   }
 }
+
+/* ---------- Resumo ---------- */
+function renderResumo() {
+  const div = document.getElementById("perfilResumo");
+  const ev = (atual.evolucao || []).slice().sort((a, b) => b.data.localeCompare(a.data));
+  const ultimo = ev[0];
+  const imcAtual = ultimo ? imc(ultimo.peso, atual.altura_cm) : null;
+  const cs = (atual.consultas || []).slice().sort((a, b) => (a.data + (a.hora||"")).localeCompare(b.data + (b.hora||"")));
+  const hoje = hojeISO();
+  const proxima = cs.find(c => c.data >= hoje && c.status !== "cancelada");
+  const ultimaRealizada = cs.slice().reverse().find(c => c.status === "realizada" || c.data < hoje);
+  const pendMetas = (atual.metasLista || []).filter(m => m.status !== "concluida" && m.status !== "abandonada");
+
+  const cards = [
+    ["Peso atual", ultimo ? `${ultimo.peso} kg` : "—", ultimo ? fmt(ultimo.data) : ""],
+    ["IMC", imcAtual ? imcAtual.toFixed(1) : "—", imcAtual ? classificaIMC(imcAtual) : "Informe a altura"],
+    ["% Gordura", ultimo?.percentual_gordura ? `${ultimo.percentual_gordura}%` : "—", ""],
+    ["Massa muscular", ultimo?.massa_muscular ? `${ultimo.massa_muscular} kg` : "—", ""],
+    ["Meta de peso", atual.meta_peso ? `${atual.meta_peso} kg` : "—", ""],
+    ["Próxima consulta", proxima ? fmt(proxima.data) + (proxima.hora ? ` às ${proxima.hora.slice(0,5)}` : "") : "Nenhuma agendada", ""],
+    ["Última consulta", ultimaRealizada ? fmt(ultimaRealizada.data) : "—", ""],
+    ["Metas em andamento", pendMetas.length, ""]
+  ];
+  div.innerHTML = cards.map(([label, valor, sub]) => `
+    <div class="resumo-card">
+      <span class="resumo-card__label">${esc(label)}</span>
+      <strong class="resumo-card__valor">${esc(valor)}</strong>
+      ${sub ? `<span class="resumo-card__sub">${esc(sub)}</span>` : ""}
+    </div>`).join("");
+}
+
+document.getElementById("salvarDadosExtra").addEventListener("click", () => {
+  persistAtual({
+    altura_cm: document.getElementById("perfilAltura").value ? +document.getElementById("perfilAltura").value : null,
+    meta_peso: document.getElementById("perfilMetaPeso").value ? +document.getElementById("perfilMetaPeso").value : null
+  });
+});
+document.getElementById("salvarObsNutri").addEventListener("click", () => {
+  persistAtual({ observacoes_nutri: document.getElementById("perfilObsNutri").value });
+});
+
+/* ---------- Consultas / agenda ---------- */
+const STATUS_LABEL = { agendada: "Agendada", realizada: "Realizada", cancelada: "Cancelada", falta: "Faltou" };
+const STATUS_BADGE  = { agendada: "badge--warn", realizada: "badge--ok", cancelada: "badge--off", falta: "badge--off" };
 
 function renderHistorico() {
   const ul = document.getElementById("perfilHistorico");
-  const cs = (atual.consultas || []).slice().sort((a, b) => b.data.localeCompare(a.data));
-  ul.innerHTML = cs.length ? cs.map(c => `<li><strong>${fmt(c.data)}</strong> ${esc(c.resumo)}</li>`).join("")
+  const cs = (atual.consultas || []).slice().sort((a, b) => (b.data + (b.hora||"")).localeCompare(a.data + (a.hora||"")));
+  ul.innerHTML = cs.length ? cs.map(c => `
+    <li data-id="${c.id}">
+      <div style="flex:1">
+        <strong>${fmt(c.data)}${c.hora ? " · " + c.hora.slice(0,5) : ""}</strong>
+        ${c.tipo ? `<span class="badge badge--off">${esc(c.tipo)}</span>` : ""}
+        <span class="badge ${STATUS_BADGE[c.status] || "badge--off"}">${STATUS_LABEL[c.status] || c.status || "—"}</span>
+        <div style="margin-top:.3rem">${esc(c.resumo)}</div>
+      </div>
+      <div class="lead-acoes" style="margin:0">
+        <button type="button" class="btn btn--ghost" data-consulta-status="realizada" data-id="${c.id}">Marcar realizada</button>
+        <button type="button" class="btn btn--ghost" data-consulta-status="falta" data-id="${c.id}">Falta</button>
+        <button type="button" class="btn btn--ghost" data-consulta-status="cancelada" data-id="${c.id}">Cancelar</button>
+      </div>
+    </li>`).join("")
     : `<li class="empty-li">Nenhuma consulta registrada.</li>`;
-}
-function renderEvolucao() {
-  const ul = document.getElementById("perfilEvolucao");
-  const ev = (atual.evolucao || []).slice().sort((a, b) => b.data.localeCompare(a.data));
-  ul.innerHTML = ev.length ? ev.map(r => `<li><strong>${r.peso} kg</strong> ${fmt(r.data)} — ${esc(r.obs) || "sem observações"}</li>`).join("")
-    : `<li class="empty-li">Nenhum registro de evolução ainda.</li>`;
-}
 
-document.getElementById("salvarMetas").addEventListener("click", () => {
-  persistAtual({ metas: document.getElementById("perfilMetas").value });
-});
+  ul.querySelectorAll("[data-consulta-status]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const cid = +btn.dataset.id;
+      const status = btn.dataset.consultaStatus;
+      try {
+        await sb.updateConsulta(cid, { status });
+        atual.consultas = atual.consultas.map(c => (c.id === cid ? { ...c, status } : c));
+        renderHistorico(); renderResumo();
+      } catch (err) { avisoErro(err); }
+    });
+  });
+}
 
 document.getElementById("formConsulta").addEventListener("submit", async e => {
   e.preventDefault();
+  const f = e.target;
   try {
-    const [nova] = await sb.addConsulta({ paciente_id: atual.id, data: e.target.data.value, resumo: e.target.resumo.value.trim() });
+    const [nova] = await sb.addConsulta({
+      paciente_id: atual.id, data: f.data.value, hora: f.hora.value || null,
+      tipo: f.tipo.value || null, resumo: f.resumo.value.trim(), status: "agendada"
+    });
     atual.consultas = [...(atual.consultas || []), nova];
-    e.target.reset(); renderHistorico();
+    f.reset(); renderHistorico(); renderResumo();
   } catch (err) {
     avisoErro(err);
   }
 });
 
+/* ---------- Lembretes ---------- */
+function renderLembretes() {
+  const ul = document.getElementById("perfilLembretes");
+  const ls = (atual.lembretes || []).slice().sort((a, b) => a.data.localeCompare(b.data));
+  ul.innerHTML = ls.length ? ls.map(l => `
+    <li data-id="${l.id}">
+      <div style="flex:1; ${l.concluido ? "opacity:.55; text-decoration:line-through" : ""}">
+        <strong>${fmt(l.data)}</strong> ${esc(l.texto)}
+      </div>
+      <div class="lead-acoes" style="margin:0">
+        <button type="button" class="btn btn--ghost" data-lembrete-toggle="${l.id}">${l.concluido ? "Reabrir" : "Concluir"}</button>
+        <button type="button" class="btn-delete" data-lembrete-del="${l.id}">🗑</button>
+      </div>
+    </li>`).join("")
+    : `<li class="empty-li">Nenhum lembrete cadastrado.</li>`;
+
+  ul.querySelectorAll("[data-lembrete-toggle]").forEach(btn => btn.addEventListener("click", async () => {
+    const lid = +btn.dataset.lembreteToggle;
+    const atualL = atual.lembretes.find(l => l.id === lid);
+    try {
+      await sb.updateLembrete(lid, { concluido: !atualL.concluido });
+      atual.lembretes = atual.lembretes.map(l => (l.id === lid ? { ...l, concluido: !l.concluido } : l));
+      renderLembretes();
+    } catch (err) { avisoErro(err); }
+  }));
+  ul.querySelectorAll("[data-lembrete-del]").forEach(btn => btn.addEventListener("click", async () => {
+    const lid = +btn.dataset.lembreteDel;
+    try {
+      await sb.deleteLembrete(lid);
+      atual.lembretes = atual.lembretes.filter(l => l.id !== lid);
+      renderLembretes();
+    } catch (err) { avisoErro(err); }
+  }));
+}
+
+document.getElementById("formLembrete").addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = e.target;
+  try {
+    const [novo] = await sb.addLembrete({ paciente_id: atual.id, data: f.data.value, texto: f.texto.value.trim() });
+    atual.lembretes = [...(atual.lembretes || []), novo];
+    f.reset(); renderLembretes();
+  } catch (err) { avisoErro(err); }
+});
+
+/* ---------- Evolução física ---------- */
+function renderEvolucao() {
+  const ul = document.getElementById("perfilEvolucao");
+  const ev = (atual.evolucao || []).slice().sort((a, b) => b.data.localeCompare(a.data));
+  ul.innerHTML = ev.length ? ev.map(r => {
+    const i = imc(r.peso, atual.altura_cm);
+    const extras = [
+      i ? `IMC ${i.toFixed(1)}` : null,
+      r.percentual_gordura ? `${r.percentual_gordura}% gordura` : null,
+      r.massa_muscular ? `${r.massa_muscular}kg massa musc.` : null
+    ].filter(Boolean).join(" · ");
+    return `<li><strong>${r.peso} kg</strong> ${fmt(r.data)}${extras ? " — " + extras : ""}${r.obs ? " — " + esc(r.obs) : ""}</li>`;
+  }).join("") : `<li class="empty-li">Nenhum registro de evolução ainda.</li>`;
+}
+
 document.getElementById("formEvolucao").addEventListener("submit", async e => {
   e.preventDefault();
+  const f = e.target;
   try {
-    const [nova] = await sb.addEvolucao({ paciente_id: atual.id, data: hojeISO(), peso: +e.target.peso.value, obs: e.target.obs.value.trim() });
+    const [nova] = await sb.addEvolucao({
+      paciente_id: atual.id, data: f.data.value, peso: +f.peso.value,
+      percentual_gordura: f.percentual_gordura.value ? +f.percentual_gordura.value : null,
+      massa_muscular: f.massa_muscular.value ? +f.massa_muscular.value : null,
+      obs: f.obs.value.trim()
+    });
     atual.evolucao = [...(atual.evolucao || []), nova];
-    e.target.reset(); renderEvolucao();
+    f.reset(); renderEvolucao(); renderResumo();
   } catch (err) {
     avisoErro(err);
   }
+});
+
+/* ---------- Medidas corporais ---------- */
+function renderMedidas() {
+  const ul = document.getElementById("perfilMedidas");
+  const ms = (atual.medidas || []).slice().sort((a, b) => b.data.localeCompare(a.data));
+  ul.innerHTML = ms.length ? ms.map(m => {
+    const partes = [
+      m.cintura && `cintura ${m.cintura}`, m.quadril && `quadril ${m.quadril}`,
+      m.abdomen && `abdômen ${m.abdomen}`, m.peito && `peito ${m.peito}`,
+      m.braco && `braço ${m.braco}`, m.coxa && `coxa ${m.coxa}`, m.panturrilha && `panturrilha ${m.panturrilha}`
+    ].filter(Boolean).join(" · ");
+    return `<li><strong>${fmt(m.data)}</strong> ${esc(partes) || "sem valores"}</li>`;
+  }).join("") : `<li class="empty-li">Nenhuma medida registrada ainda.</li>`;
+}
+
+document.getElementById("formMedidas").addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = e.target;
+  const num = v => (v ? +v : null);
+  try {
+    const [nova] = await sb.addMedida({
+      paciente_id: atual.id, data: f.data.value,
+      cintura: num(f.cintura.value), quadril: num(f.quadril.value), abdomen: num(f.abdomen.value),
+      peito: num(f.peito.value), braco: num(f.braco.value), coxa: num(f.coxa.value), panturrilha: num(f.panturrilha.value)
+    });
+    atual.medidas = [...(atual.medidas || []), nova];
+    f.reset(); renderMedidas();
+  } catch (err) {
+    avisoErro(err);
+  }
+});
+
+/* ---------- Plano alimentar (histórico) & suplementação ---------- */
+function renderPlanos() {
+  const ul = document.getElementById("perfilPlanos");
+  const ps = (atual.planos || []).slice().sort((a, b) => b.data.localeCompare(a.data));
+  ul.innerHTML = ps.length ? ps.map(p => `
+    <li><strong>${esc(p.titulo)}</strong> ${fmt(p.data)}
+      <span class="badge ${p.ativo ? "badge--ok" : "badge--off"}">${p.ativo ? "Ativo" : "Encerrado"}</span>
+    </li>`).join("") : `<li class="empty-li">Nenhum plano alimentar registrado.</li>`;
+}
+document.getElementById("formPlano").addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = e.target;
+  try {
+    const [novo] = await sb.addPlano({
+      paciente_id: atual.id, titulo: f.titulo.value.trim(), data: f.data.value, ativo: f.ativo.checked
+    });
+    atual.planos = [...(atual.planos || []), novo];
+    f.reset(); renderPlanos();
+  } catch (err) { avisoErro(err); }
+});
+
+function renderSuplementos() {
+  const ul = document.getElementById("perfilSuplementos");
+  const ss = (atual.suplementos || []);
+  ul.innerHTML = ss.length ? ss.map(s => `
+    <li><strong>${esc(s.nome)}</strong> ${esc(s.dose) || ""} ${s.data_inicio ? "· desde " + fmt(s.data_inicio) : ""}</li>`
+  ).join("") : `<li class="empty-li">Nenhuma suplementação registrada.</li>`;
+}
+document.getElementById("formSuplemento").addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = e.target;
+  try {
+    const [novo] = await sb.addSuplemento({
+      paciente_id: atual.id, nome: f.nome.value.trim(), dose: f.dose.value.trim(), data_inicio: f.data_inicio.value || null
+    });
+    atual.suplementos = [...(atual.suplementos || []), novo];
+    f.reset(); renderSuplementos();
+  } catch (err) { avisoErro(err); }
+});
+
+/* ---------- Arquivos: exames e fotos de evolução ---------- */
+function linhaArquivo(item) {
+  return `<li data-id="${item.id}">
+    <div style="flex:1"><strong>${esc(item.nome) || "Arquivo"}</strong> · ${fmt(item.data)}</div>
+    <div class="lead-acoes" style="margin:0">
+      <button type="button" class="btn btn--ghost" data-arquivo-abrir="${item.id}">Abrir</button>
+      <button type="button" class="btn-delete" data-arquivo-del="${item.id}">🗑</button>
+    </div>
+  </li>`;
+}
+function ligarAcoesArquivo(ul, bucket, cacheKey) {
+  ul.querySelectorAll("[data-arquivo-abrir]").forEach(btn => btn.addEventListener("click", async () => {
+    const item = atual[cacheKey].find(i => i.id === +btn.dataset.arquivoAbrir);
+    try {
+      const url = await sb.getSignedUrl(bucket, item.storage_path);
+      window.open(url, "_blank");
+    } catch (err) { avisoErro(err); }
+  }));
+  ul.querySelectorAll("[data-arquivo-del]").forEach(btn => btn.addEventListener("click", async () => {
+    const aid = +btn.dataset.arquivoDel;
+    const item = atual[cacheKey].find(i => i.id === aid);
+    if (!confirm("Excluir este arquivo?")) return;
+    try {
+      await sb.deleteArquivoRow(aid);
+      await sb.deleteArquivoStorage(bucket, item.storage_path).catch(() => {});
+      atual[cacheKey] = atual[cacheKey].filter(i => i.id !== aid);
+      renderArquivos();
+    } catch (err) { avisoErro(err); }
+  }));
+}
+function renderArquivos() {
+  const ulE = document.getElementById("perfilExames");
+  const ulF = document.getElementById("perfilFotos");
+  const exames = (atual.exames || []).slice().sort((a, b) => b.data.localeCompare(a.data));
+  const fotos = (atual.fotos || []).slice().sort((a, b) => b.data.localeCompare(a.data));
+  ulE.innerHTML = exames.length ? exames.map(linhaArquivo).join("") : `<li class="empty-li">Nenhum exame anexado.</li>`;
+  ulF.innerHTML = fotos.length ? fotos.map(linhaArquivo).join("") : `<li class="empty-li">Nenhuma foto de evolução anexada.</li>`;
+  ligarAcoesArquivo(ulE, "exames", "exames");
+  ligarAcoesArquivo(ulF, "fotos-evolucao", "fotos");
+}
+
+async function enviarArquivo(form, bucket, tipo, cacheKey) {
+  const file = form.arquivo.files[0];
+  if (!file) return;
+  const btn = form.querySelector('[type="submit"]');
+  btn.disabled = true;
+  try {
+    const path = `${atual.id}/${Date.now()}_${file.name}`;
+    await sb.uploadArquivo(bucket, path, file);
+    const [row] = await sb.addArquivoRow({
+      paciente_id: atual.id, tipo, nome: form.nome.value.trim() || file.name, storage_path: path
+    });
+    atual[cacheKey] = [...(atual[cacheKey] || []), row];
+    form.reset(); renderArquivos();
+  } catch (err) {
+    avisoErro(err);
+  } finally {
+    btn.disabled = false;
+  }
+}
+document.getElementById("formExame").addEventListener("submit", e => { e.preventDefault(); enviarArquivo(e.target, "exames", "exame", "exames"); });
+document.getElementById("formFoto").addEventListener("submit", e => { e.preventDefault(); enviarArquivo(e.target, "fotos-evolucao", "foto_evolucao", "fotos"); });
+
+/* ---------- Metas nutricionais ---------- */
+function renderMetasLista() {
+  const ul = document.getElementById("perfilMetasLista");
+  const ms = (atual.metasLista || []);
+  ul.innerHTML = ms.length ? ms.map(m => `
+    <li data-id="${m.id}">
+      <div style="flex:1">
+        <strong>${esc(m.descricao)}</strong> ${m.data_alvo ? "· até " + fmt(m.data_alvo) : ""}
+      </div>
+      <select data-meta-status="${m.id}" style="padding:.4rem .6rem;border-radius:8px;border:1px solid var(--line)">
+        <option value="em andamento" ${m.status === "em andamento" ? "selected" : ""}>Em andamento</option>
+        <option value="concluida" ${m.status === "concluida" ? "selected" : ""}>Concluída</option>
+        <option value="abandonada" ${m.status === "abandonada" ? "selected" : ""}>Abandonada</option>
+      </select>
+    </li>`).join("") : `<li class="empty-li">Nenhuma meta cadastrada.</li>`;
+
+  ul.querySelectorAll("[data-meta-status]").forEach(sel => sel.addEventListener("change", async () => {
+    const mid = +sel.dataset.metaStatus;
+    try {
+      await sb.updateMeta(mid, { status: sel.value });
+      atual.metasLista = atual.metasLista.map(m => (m.id === mid ? { ...m, status: sel.value } : m));
+      renderResumo();
+    } catch (err) { avisoErro(err); }
+  }));
+}
+document.getElementById("formMeta").addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = e.target;
+  try {
+    const [nova] = await sb.addMeta({ paciente_id: atual.id, descricao: f.descricao.value.trim(), data_alvo: f.data_alvo.value || null });
+    atual.metasLista = [...(atual.metasLista || []), nova];
+    f.reset(); renderMetasLista(); renderResumo();
+  } catch (err) { avisoErro(err); }
 });
 
 /* Fechar modais */

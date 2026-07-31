@@ -196,7 +196,7 @@
 
   <!-- ===== MODAL: PERFIL DO PACIENTE ===== -->
   <div class="modal" id="modalPerfil" hidden>
-    <div class="modal__box modal__box--wide">
+    <div class="modal__box modal__box--wide modal__box--perfil">
       <button class="modal__close" data-close>&times;</button>
       <div class="perfil__head">
         <span class="perfil__avatar" id="perfilAvatar">?</span>
@@ -206,34 +206,143 @@
           <div class="perfil__tags" id="perfilTags"></div>
         </div>
       </div>
-      <div class="tabs">
-        <button class="tab active" data-tab="dados">Dados &amp; Metas</button>
-        <button class="tab" data-tab="historico">Histórico de consultas</button>
-        <button class="tab" data-tab="evolucao">Evolução / Prontuário</button>
+      <div class="tabs tabs--scroll">
+        <button class="tab active" data-tab="resumo">Resumo</button>
+        <button class="tab" data-tab="dados">Dados pessoais</button>
+        <button class="tab" data-tab="anamnese">Anamnese inicial</button>
+        <button class="tab" data-tab="evolucao">Evolução física</button>
+        <button class="tab" data-tab="consultas">Consultas</button>
+        <button class="tab" data-tab="plano">Plano &amp; suplementos</button>
+        <button class="tab" data-tab="arquivos">Arquivos &amp; exames</button>
+        <button class="tab" data-tab="metas">Metas</button>
       </div>
 
-      <div class="tabpane active" id="tab-dados">
+      <!-- RESUMO -->
+      <div class="tabpane active" id="tab-resumo">
+        <div class="resumo-grid" id="perfilResumo"></div>
+        <div class="lead-secao">
+          <h3>Observações da nutricionista</h3>
+          <textarea id="perfilObsNutri" rows="3" placeholder="Anotações gerais sobre o paciente…"></textarea>
+          <button class="btn btn--ghost" id="salvarObsNutri" style="margin-top:.6rem">Salvar observações</button>
+        </div>
+      </div>
+
+      <!-- DADOS PESSOAIS -->
+      <div class="tabpane" id="tab-dados">
         <dl class="datalist" id="perfilDados"></dl>
-        <div class="field"><label>Metas do paciente</label><textarea id="perfilMetas" rows="3" placeholder="Ex.: perder 6kg em 3 meses, melhorar sono…"></textarea></div>
-        <button class="btn btn--ghost" id="salvarMetas">Salvar metas</button>
+        <div class="field-row">
+          <div class="field"><label>Altura (cm)</label><input type="number" step="0.1" id="perfilAltura"></div>
+          <div class="field"><label>Meta de peso (kg)</label><input type="number" step="0.1" id="perfilMetaPeso"></div>
+        </div>
+        <button class="btn btn--ghost" id="salvarDadosExtra">Salvar</button>
       </div>
 
-      <div class="tabpane" id="tab-historico">
-        <ul class="historico" id="perfilHistorico"></ul>
-        <form class="inline-form" id="formConsulta">
-          <input type="date" name="data" required>
-          <input type="text" name="resumo" placeholder="Resumo da consulta…" required>
-          <button class="btn btn--gold" type="submit">Registrar</button>
-        </form>
+      <!-- ANAMNESE -->
+      <div class="tabpane" id="tab-anamnese">
+        <div id="perfilAnamnese"></div>
       </div>
 
+      <!-- EVOLUÇÃO FÍSICA -->
       <div class="tabpane" id="tab-evolucao">
+        <h3>Peso, IMC, % gordura e massa muscular</h3>
         <form class="inline-form" id="formEvolucao">
+          <input type="date" name="data" required>
           <input type="number" step="0.1" name="peso" placeholder="Peso (kg)" required>
-          <input type="text" name="obs" placeholder="Observação clínica…">
+          <input type="number" step="0.1" name="percentual_gordura" placeholder="% gordura">
+          <input type="number" step="0.1" name="massa_muscular" placeholder="Massa muscular (kg)">
+          <input type="text" name="obs" placeholder="Observação…">
           <button class="btn btn--gold" type="submit">Adicionar registro</button>
         </form>
         <ul class="evolucao" id="perfilEvolucao"></ul>
+
+        <h3 style="margin-top:1.6rem">Medidas corporais (cm)</h3>
+        <form class="inline-form" id="formMedidas">
+          <input type="date" name="data" required>
+          <input type="number" step="0.1" name="cintura" placeholder="Cintura">
+          <input type="number" step="0.1" name="quadril" placeholder="Quadril">
+          <input type="number" step="0.1" name="abdomen" placeholder="Abdômen">
+          <input type="number" step="0.1" name="peito" placeholder="Peito">
+          <input type="number" step="0.1" name="braco" placeholder="Braço">
+          <input type="number" step="0.1" name="coxa" placeholder="Coxa">
+          <input type="number" step="0.1" name="panturrilha" placeholder="Panturrilha">
+          <button class="btn btn--gold" type="submit">Adicionar medidas</button>
+        </form>
+        <ul class="evolucao" id="perfilMedidas"></ul>
+      </div>
+
+      <!-- CONSULTAS / AGENDA -->
+      <div class="tabpane" id="tab-consultas">
+        <form class="inline-form" id="formConsulta">
+          <input type="date" name="data" required>
+          <input type="time" name="hora">
+          <select name="tipo">
+            <option value="">Tipo</option>
+            <option>Primeira consulta</option><option>Retorno</option>
+            <option>Online</option><option>Presencial</option>
+          </select>
+          <input type="text" name="resumo" placeholder="Resumo / pauta da consulta…" required>
+          <button class="btn btn--gold" type="submit">Agendar</button>
+        </form>
+        <ul class="historico" id="perfilHistorico"></ul>
+
+        <h3 style="margin-top:1.6rem">Lembretes</h3>
+        <form class="inline-form" id="formLembrete">
+          <input type="date" name="data" required>
+          <input type="text" name="texto" placeholder="Ex.: pedir exame de sangue no retorno…" required>
+          <button class="btn btn--gold" type="submit">Adicionar lembrete</button>
+        </form>
+        <ul class="historico" id="perfilLembretes"></ul>
+      </div>
+
+      <!-- PLANO ALIMENTAR & SUPLEMENTAÇÃO -->
+      <div class="tabpane" id="tab-plano">
+        <h3>Histórico de planos alimentares</h3>
+        <p class="step__hint">O plano em si é montado no Web Diet — aqui fica só o registro/arquivo, para consulta rápida.</p>
+        <form class="inline-form" id="formPlano">
+          <input type="text" name="titulo" placeholder="Título do plano (ex.: Plano de verão)" required>
+          <input type="date" name="data" required>
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;flex:none"><input type="checkbox" name="ativo" checked style="width:auto;flex:none"> Ativo</label>
+          <button class="btn btn--gold" type="submit">Registrar</button>
+        </form>
+        <ul class="historico" id="perfilPlanos"></ul>
+
+        <h3 style="margin-top:1.6rem">Suplementação</h3>
+        <form class="inline-form" id="formSuplemento">
+          <input type="text" name="nome" placeholder="Suplemento" required>
+          <input type="text" name="dose" placeholder="Dose (ex.: 5g ao dia)">
+          <input type="date" name="data_inicio" placeholder="Início">
+          <button class="btn btn--gold" type="submit">Adicionar</button>
+        </form>
+        <ul class="historico" id="perfilSuplementos"></ul>
+      </div>
+
+      <!-- ARQUIVOS & EXAMES -->
+      <div class="tabpane" id="tab-arquivos">
+        <h3>Exames</h3>
+        <form class="inline-form" id="formExame">
+          <input type="file" name="arquivo" accept=".pdf,.jpg,.jpeg,.png" required>
+          <input type="text" name="nome" placeholder="Nome do exame (opcional)">
+          <button class="btn btn--gold" type="submit">Enviar exame</button>
+        </form>
+        <ul class="historico" id="perfilExames"></ul>
+
+        <h3 style="margin-top:1.6rem">Fotos de evolução</h3>
+        <form class="inline-form" id="formFoto">
+          <input type="file" name="arquivo" accept="image/*" required>
+          <input type="text" name="nome" placeholder="Descrição (opcional)">
+          <button class="btn btn--gold" type="submit">Enviar foto</button>
+        </form>
+        <ul class="historico" id="perfilFotos"></ul>
+      </div>
+
+      <!-- METAS -->
+      <div class="tabpane" id="tab-metas">
+        <form class="inline-form" id="formMeta">
+          <input type="text" name="descricao" placeholder="Ex.: perder 6kg em 3 meses" required>
+          <input type="date" name="data_alvo">
+          <button class="btn btn--gold" type="submit">Adicionar meta</button>
+        </form>
+        <ul class="historico" id="perfilMetasLista"></ul>
       </div>
     </div>
   </div>
