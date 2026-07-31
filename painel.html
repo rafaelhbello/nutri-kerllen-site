@@ -84,6 +84,7 @@
       <nav class="sidebar__nav">
         <button class="side-link active" data-view="dashboard">◈ Dashboard</button>
         <button class="side-link" data-view="pacientes">◈ Pacientes</button>
+        <button class="side-link" data-view="agenda">◈ Agenda</button>
         <button class="side-link" data-view="leads">◈ Leads do site</button>
         <a class="side-link" href="anamnese.html">◈ Formulário de Anamnese</a>
         <a class="side-link" href="index.html">◈ Ver site</a>
@@ -117,6 +118,23 @@
           <div class="panel">
             <h3>Pendências de anamnese</h3>
             <ul class="pendencias" id="listaPendencias"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- AGENDA -->
+      <section class="view" id="view-agenda">
+        <header class="main__head">
+          <div><h1>Agenda</h1><p>Consultas futuras de todos os pacientes e lembretes pendentes</p></div>
+        </header>
+        <div class="panel-grid">
+          <div class="panel">
+            <h3>Próximas consultas</h3>
+            <ul class="agenda" id="agendaLista"></ul>
+          </div>
+          <div class="panel">
+            <h3>Lembretes pendentes</h3>
+            <ul class="pendencias" id="agendaLembretes"></ul>
           </div>
         </div>
       </section>

@@ -121,6 +121,8 @@ const sb = {
   deleteConsulta:  (id)   => sb._req("DELETE", `consultas?id=eq.${id}`,           null, true),
   getConsultas:    (id)   => sb._req("GET",   `consultas?paciente_id=eq.${id}&order=data.desc`, null, true),
   getConsultasPorData: (data) => sb._req("GET", `consultas?data=eq.${data}&order=id.asc`, null, true),
+  getConsultasFuturas: (deData) => sb._req("GET", `consultas?data=gte.${deData}&status=neq.cancelada&order=data.asc,hora.asc`, null, true),
+  getLembretesPendentes: () => sb._req("GET", `lembretes?concluido=eq.false&order=data.asc`, null, true),
 
   /* ---------- Medidas corporais ---------- */
   addMedida:       (d)    => sb._req("POST",  "medidas_corporais",               d,    true),

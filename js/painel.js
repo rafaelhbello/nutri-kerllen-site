@@ -62,6 +62,7 @@ document.querySelectorAll(".side-link[data-view]").forEach(btn => {
     btn.classList.add("active");
     document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
     document.getElementById("view-" + btn.dataset.view).classList.add("active");
+    if (btn.dataset.view === "agenda") renderAgendaGeral();
   });
 });
 
@@ -865,6 +866,64 @@ document.getElementById("formMeta").addEventListener("submit", async e => {
     f.reset(); renderMetasLista(); renderResumo();
   } catch (err) { avisoErro(err); }
 });
+
+/* ---------- Agenda geral (Fase 4) ---------- */
+async function renderAgendaGeral() {
+  const ulC = document.getElementById("agendaLista");
+  const ulL = document.getElementById("agendaLembretes");
+  ulC.innerHTML = `<li class="empty-li">Carregando…</li>`;
+  ulL.innerHTML = `<li class="empty-li">Carregando…</li>`;
+  try {
+    const [consultas, lembretes] = await Promise.all([
+      sb.getConsultasFuturas(hojeISO()), sb.getLembretesPendentes()
+    ]);
+    const nomeDe = pid => pacientesCache.find(p => p.id === pid)?.nome || "Paciente";
+
+    ulC.innerHTML = consultas.length ? consultas.map(c => `
+      <li data-id="${c.id}">
+        <div style="flex:1;cursor:pointer" data-abrir-paciente="${c.paciente_id}">
+          <time>${fmt(c.data)}${c.hora ? " " + c.hora.slice(0,5) : ""}</time>
+          <strong>${esc(nomeDe(c.paciente_id))}</strong>
+          ${c.tipo ? `<span class="badge badge--off">${esc(c.tipo)}</span>` : ""}
+          <span class="badge ${STATUS_BADGE[c.status] || "badge--off"}">${STATUS_LABEL[c.status] || c.status}</span>
+          <div style="font-size:.82rem;color:var(--muted)">${esc(c.resumo) || ""}</div>
+        </div>
+        <div class="lead-acoes" style="margin:0">
+          <button type="button" class="btn btn--ghost" data-agenda-status="realizada" data-id="${c.id}">Realizada</button>
+          <button type="button" class="btn btn--ghost" data-agenda-status="falta" data-id="${c.id}">Falta</button>
+          <button type="button" class="btn btn--ghost" data-agenda-status="cancelada" data-id="${c.id}">Cancelar</button>
+        </div>
+      </li>`).join("") : `<li class="empty-li">Nenhuma consulta agendada.</li>`;
+
+    ulL.innerHTML = lembretes.length ? lembretes.map(l => `
+      <li data-id="${l.id}">
+        <div style="flex:1"><strong>${fmt(l.data)}</strong> ${esc(nomeDe(l.paciente_id))} — ${esc(l.texto)}</div>
+        <button type="button" class="btn btn--ghost" data-agenda-lembrete-ok="${l.id}">Concluir</button>
+      </li>`).join("") : `<li class="empty-li">Nenhum lembrete pendente. ✦</li>`;
+
+    ulC.querySelectorAll("[data-abrir-paciente]").forEach(el => el.addEventListener("click", () => {
+      document.querySelectorAll(".side-link[data-view]").forEach(b => b.classList.remove("active"));
+      document.querySelector('.side-link[data-view="pacientes"]').classList.add("active");
+      document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+      document.getElementById("view-pacientes").classList.add("active");
+      abrirPerfil(+el.dataset.abrirPaciente);
+    }));
+    ulC.querySelectorAll("[data-agenda-status]").forEach(btn => btn.addEventListener("click", async () => {
+      try {
+        await sb.updateConsulta(+btn.dataset.id, { status: btn.dataset.agendaStatus });
+        renderAgendaGeral();
+      } catch (err) { avisoErro(err); }
+    }));
+    ulL.querySelectorAll("[data-agenda-lembrete-ok]").forEach(btn => btn.addEventListener("click", async () => {
+      try {
+        await sb.updateLembrete(+btn.dataset.agendaLembreteOk, { concluido: true });
+        renderAgendaGeral();
+      } catch (err) { avisoErro(err); }
+    }));
+  } catch (err) {
+    avisoErro(err);
+  }
+}
 
 /* Fechar modais */
 document.querySelectorAll(".modal").forEach(m => {
