@@ -498,7 +498,9 @@ async function abrirPerfil(id) {
     ["WhatsApp", atual.telefone], ["E-mail", atual.email],
     ["Nascimento", fmt(atual.nascimento)], ["Objetivo", atual.objetivo]
   ].map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v) || "—"}</dd></div>`).join("");
-  document.getElementById("perfilAltura").value = atual.altura_cm || "";
+  // Auto-correção ao exibir: se for menor que 10, mostra em metros para o usuário
+  const alturaExibicao = atual.altura_cm && atual.altura_cm < 10 ? (atual.altura_cm).toFixed(2) : atual.altura_cm;
+  document.getElementById("perfilAltura").value = alturaExibicao || "";
   document.getElementById("perfilMetaPeso").value = atual.meta_peso || "";
   document.getElementById("perfilObsNutri").value = atual.observacoes_nutri || "";
 
@@ -549,7 +551,16 @@ function renderResumo() {
   const div = document.getElementById("perfilResumo");
   const ev = (atual.evolucao || []).slice().sort((a, b) => b.data.localeCompare(a.data));
   const ultimo = ev[0];
-  const imcAtual = ultimo ? imc(ultimo.peso, atual.altura_cm) : null;
+  
+  // Auto-correção de altura: se for menor que 10, assume que foi digitado em metros
+  let alturaCorrigida = atual.altura_cm;
+  if (alturaCorrigida && alturaCorrigida < 10) {
+    alturaCorrigida = alturaCorrigida * 100;
+  }
+  
+  // Fallback de peso: usa o último registro de evolução, ou o peso da anamnese
+  const pesoParaIMC = ultimo?.peso || (atual.peso_anamnese ? atual.peso_anamnese : null);
+  const imcAtual = pesoParaIMC && alturaCorrigida ? imc(pesoParaIMC, alturaCorrigida) : null;
   const cs = (atual.consultas || []).slice().sort((a, b) => (a.data + (a.hora||"")).localeCompare(b.data + (b.hora||"")));
   const hoje = hojeISO();
   const proxima = cs.find(c => c.data >= hoje && c.status !== "cancelada");
@@ -557,8 +568,8 @@ function renderResumo() {
   const pendMetas = (atual.metasLista || []).filter(m => m.status !== "concluida" && m.status !== "abandonada");
 
   const cards = [
-    ["Peso atual", ultimo ? `${ultimo.peso} kg` : "—", ultimo ? fmt(ultimo.data) : ""],
-    ["IMC", imcAtual ? imcAtual.toFixed(1) : "—", imcAtual ? classificaIMC(imcAtual) : "Informe a altura"],
+    ["Peso atual", ultimo ? `${ultimo.peso} kg` : (pesoParaIMC ? `${pesoParaIMC} kg (anamnese)` : "—"), ultimo ? fmt(ultimo.data) : ""],
+    ["IMC", imcAtual ? imcAtual.toFixed(1) : "—", imcAtual ? classificaIMC(imcAtual) : (alturaCorrigida ? "Registre o peso" : "Informe a altura")],
     ["% Gordura", ultimo?.percentual_gordura ? `${ultimo.percentual_gordura}%` : "—", ""],
     ["Massa muscular", ultimo?.massa_muscular ? `${ultimo.massa_muscular} kg` : "—", ""],
     ["Meta de peso", atual.meta_peso ? `${atual.meta_peso} kg` : "—", ""],
@@ -1085,7 +1096,13 @@ document.getElementById("salvarDadosExtra").addEventListener("click", async () =
   btn.disabled = true;
   
   try {
-    await persistAtual({ altura_cm: altura, meta_peso: metaPeso });
+    // Auto-correção: se altura for menor que 10, assume que foi digitado em metros
+    let alturaCorrigida = altura;
+    if (alturaCorrigida && alturaCorrigida < 10) {
+      alturaCorrigida = alturaCorrigida * 100;
+    }
+    
+    await persistAtual({ altura_cm: alturaCorrigida, meta_peso: metaPeso });
     btn.textContent = "✓ Salvo!";
     setTimeout(() => { btn.textContent = textOriginal; btn.disabled = false; }, 2000);
     renderEvolucao();
