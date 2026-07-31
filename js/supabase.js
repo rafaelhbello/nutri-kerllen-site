@@ -115,6 +115,7 @@ const sb = {
 
   addEvolucao:     (d)    => sb._req("POST",  "evolucao",                        d,    true),
   getEvolucao:     (id)   => sb._req("GET",   `evolucao?paciente_id=eq.${id}&order=data.desc`, null, true),
+  deleteEvolucao:  (id)   => sb._req("DELETE", `evolucao?id=eq.${id}`,               null, true),
   addConsulta:     (d)    => sb._req("POST",  "consultas",                       d,    true),
   updateConsulta:  (id,d) => sb._req("PATCH", `consultas?id=eq.${id}`,           d,    true),
   deleteConsulta:  (id)   => sb._req("DELETE", `consultas?id=eq.${id}`,           null, true),

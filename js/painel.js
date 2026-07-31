@@ -588,7 +588,13 @@ function renderEvolucao() {
       r.percentual_gordura ? `${r.percentual_gordura}% gordura` : null,
       r.massa_muscular ? `${r.massa_muscular}kg massa musc.` : null
     ].filter(Boolean).join(" · ");
-    return `<li><strong>${r.peso} kg</strong> ${fmt(r.data)}${extras ? " — " + extras : ""}${r.obs ? " — " + esc(r.obs) : ""}</li>`;
+    return `
+      <li>
+        <div class="evolucao-info">
+          <strong>${r.peso} kg</strong> ${fmt(r.data)}${extras ? " — " + extras : ""}${r.obs ? " — " + esc(r.obs) : ""}
+        </div>
+        <button class="btn-delete-small" onclick="confirmarExcluirEvolucao(${r.id})" title="Excluir registro">🗑</button>
+      </li>`;
   }).join("") : `<li class="empty-li">Nenhum registro de evolução ainda.</li>`;
 
   renderGraficosEvolucao();
@@ -885,6 +891,20 @@ async function confirmarExcluirLead(id, nome) {
     leadsCache = leadsCache.filter(l => l.id !== id);
     renderDashboard();
     renderLeads();
+  } catch (err) {
+    avisoErro(err);
+  }
+}
+
+async function confirmarExcluirEvolucao(id) {
+  if (!confirm("Tem certeza que deseja excluir este registro de evolução?")) return;
+  try {
+    await sb.deleteEvolucao(id);
+    if (atual && atual.evolucao) {
+      atual.evolucao = atual.evolucao.filter(r => r.id !== id);
+      renderEvolucao();
+      renderResumo();
+    }
   } catch (err) {
     avisoErro(err);
   }
