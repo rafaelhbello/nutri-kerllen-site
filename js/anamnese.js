@@ -7,6 +7,8 @@ const label = document.getElementById("progressLabel");
 const btnVoltar = document.getElementById("btnVoltar");
 const btnAvancar = document.getElementById("btnAvancar");
 
+const DRAFT_KEY = "kr_anamnese_draft";
+
 let idx = 0;
 
 /* Etapas visíveis (o ciclo menstrual só entra se sexo = feminino) */
@@ -18,6 +20,7 @@ function visibleSteps() {
 function render() {
   const vis = visibleSteps();
   if (idx >= vis.length) idx = vis.length - 1;
+  if (idx < 0) idx = 0;
   steps.forEach(s => s.classList.remove("active"));
   vis[idx].classList.add("active");
 
@@ -43,11 +46,14 @@ function validaAtual() {
 
 btnAvancar.addEventListener("click", () => {
   if (!validaAtual()) return;
+  salvarRascunho();
   const vis = visibleSteps();
   if (idx < vis.length - 1) { idx++; render(); }
   else enviar();
 });
-btnVoltar.addEventListener("click", () => { if (idx > 0) { idx--; render(); } });
+btnVoltar.addEventListener("click", () => {
+  if (idx > 0) { idx--; render(); salvarRascunho(); }
+});
 
 /* ---------- Xixímetro ---------- */
 const xixiCores = [
@@ -78,6 +84,7 @@ xixiCores.forEach((c, i) => {
     xixiFeedback.hidden = false;
     xixiFeedback.className = `xixi-feedback xixi-feedback--${c.nivel}`;
     xixiFeedback.textContent = `Nível ${i + 1} de 8 — ${c.texto}`;
+    salvarRascunho();
   });
   xixiWrap.appendChild(b);
 });
@@ -96,6 +103,167 @@ dias.forEach(dia => {
       <option>Leve</option><option>Moderada</option><option>Intensa</option>
     </select>`;
   weekGrid.appendChild(row);
+});
+
+/* ---------- Rascunho (salvar progresso) ---------- */
+function coletarRascunho() {
+  const campos = {};
+  form.querySelectorAll("input, select, textarea").forEach(el => {
+    if (!el.name) return;
+    if (el.type === "radio") {
+      if (el.checked) campos[el.name] = el.value;
+    } else if (el.type === "checkbox") {
+      if (!campos[el.name]) campos[el.name] = [];
+      if (el.checked) campos[el.name].push(el.value);
+    } else {
+      campos[el.name] = el.value;
+    }
+  });
+
+  const treinos = {};
+  weekGrid.querySelectorAll("[data-dia]").forEach(el => {
+    const dia = el.dataset.dia;
+    treinos[dia] = treinos[dia] || {};
+    if (el.value) treinos[dia][el.dataset.campo] = el.value;
+  });
+
+  return {
+    campos,
+    treinos,
+    xiximetro: xixiSelecionado,
+    idx,
+    salvoEm: new Date().toISOString()
+  };
+}
+
+function salvarRascunho() {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(coletarRascunho()));
+    mostrarIndicadorRascunho();
+  } catch (e) {
+    console.warn("Não foi possível salvar o rascunho:", e);
+  }
+}
+
+function limparRascunho() {
+  localStorage.removeItem(DRAFT_KEY);
+  const el = document.getElementById("draftHint");
+  if (el) el.remove();
+}
+
+function restaurarRascunho() {
+  let draft;
+  try {
+    draft = JSON.parse(localStorage.getItem(DRAFT_KEY));
+  } catch { return false; }
+  if (!draft || !draft.campos) return false;
+
+  const { campos, treinos, xiximetro, idx: savedIdx } = draft;
+
+  Object.keys(campos).forEach(name => {
+    const val = campos[name];
+    const els = form.querySelectorAll(`[name="${CSS.escape(name)}"]`);
+    if (!els.length) return;
+
+    els.forEach(el => {
+      if (el.type === "radio") {
+        el.checked = el.value === val;
+      } else if (el.type === "checkbox") {
+        const arr = Array.isArray(val) ? val : [val];
+        el.checked = arr.includes(el.value);
+      } else {
+        el.value = val ?? "";
+      }
+    });
+  });
+
+  if (treinos) {
+    weekGrid.querySelectorAll("[data-dia]").forEach(el => {
+      const dia = el.dataset.dia;
+      const campo = el.dataset.campo;
+      if (treinos[dia] && treinos[dia][campo] != null) {
+        el.value = treinos[dia][campo];
+      }
+    });
+  }
+
+  if (xiximetro && xiximetro >= 1 && xiximetro <= 8) {
+    xixiSelecionado = xiximetro;
+    const botoes = xixiWrap.querySelectorAll(".xixi");
+    const b = botoes[xiximetro - 1];
+    if (b) {
+      b.classList.add("selected");
+      const c = xixiCores[xiximetro - 1];
+      xixiFeedback.hidden = false;
+      xixiFeedback.className = `xixi-feedback xixi-feedback--${c.nivel}`;
+      xixiFeedback.textContent = `Nível ${xiximetro} de 8 — ${c.texto}`;
+    }
+  }
+
+  if (typeof savedIdx === "number" && savedIdx >= 0) {
+    idx = savedIdx;
+  }
+
+  mostrarBannerRascunho(draft.salvoEm);
+  return true;
+}
+
+function mostrarBannerRascunho(salvoEm) {
+  if (document.getElementById("draftBanner")) return;
+  const quando = salvoEm
+    ? new Date(salvoEm).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+    : "";
+  const banner = document.createElement("div");
+  banner.id = "draftBanner";
+  banner.className = "draft-banner";
+  banner.innerHTML = `
+    <span>✦ Rascunho restaurado${quando ? " de " + quando : ""}. Você pode continuar de onde parou.</span>
+    <button type="button" id="btnLimparDraft" class="draft-banner__clear">Descartar e recomeçar</button>
+  `;
+  const head = document.querySelector(".anamnese-head");
+  if (head) head.after(banner);
+  document.getElementById("btnLimparDraft").addEventListener("click", () => {
+    if (!confirm("Apagar o rascunho e recomeçar do zero?")) return;
+    limparRascunho();
+    form.reset();
+    xixiSelecionado = null;
+    xixiWrap.querySelectorAll(".xixi").forEach(x => x.classList.remove("selected"));
+    xixiFeedback.hidden = true;
+    weekGrid.querySelectorAll("input, select").forEach(el => { el.value = ""; });
+    idx = 0;
+    banner.remove();
+    render();
+  });
+}
+
+function mostrarIndicadorRascunho() {
+  let el = document.getElementById("draftHint");
+  if (!el) {
+    el = document.createElement("p");
+    el.id = "draftHint";
+    el.className = "draft-hint";
+    label.after(el);
+  }
+  el.textContent = "Progresso salvo automaticamente neste dispositivo";
+  el.hidden = false;
+}
+
+let saveTimer = null;
+form.addEventListener("input", () => {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(salvarRascunho, 600);
+});
+form.addEventListener("change", () => {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(salvarRascunho, 200);
+});
+weekGrid.addEventListener("input", () => {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(salvarRascunho, 600);
+});
+weekGrid.addEventListener("change", () => {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(salvarRascunho, 200);
 });
 
 /* ---------- Envio ---------- */
@@ -135,7 +303,6 @@ async function enviar() {
   btnAvancar.disabled = true;
   console.log("DADOS COLETADOS PARA ENVIO:", data);
   try {
-    // Teste de envio simplificado para diagnóstico
     const payload = {
       nome: data.identificacao.nome || "Sem nome",
       telefone: data.identificacao.telefone || "",
@@ -147,7 +314,6 @@ async function enviar() {
     console.log("PAYLOAD FINAL:", payload);
     await sb.saveAnamnese(payload);
 
-    // Unificação: Salva também como Lead para prospecção no painel
     try {
       await sb.saveLead({
         nome: payload.nome,
@@ -159,9 +325,14 @@ async function enviar() {
       console.error("Erro ao criar lead automático:", e);
     }
 
+    limparRascunho();
     form.hidden = true;
     document.querySelector(".progress").hidden = true;
     label.hidden = true;
+    const hint = document.getElementById("draftHint");
+    if (hint) hint.hidden = true;
+    const banner = document.getElementById("draftBanner");
+    if (banner) banner.remove();
     document.getElementById("successCard").hidden = false;
     window.scrollTo({ top: 0, behavior: "smooth" });
   } catch (err) {
@@ -172,6 +343,11 @@ async function enviar() {
 }
 
 /* Recalcula fluxo quando o sexo muda (etapa condicional) */
-document.getElementById("campoSexo").addEventListener("change", render);
+document.getElementById("campoSexo").addEventListener("change", () => {
+  render();
+  salvarRascunho();
+});
 
+/* Restaura rascunho se existir, depois renderiza */
+restaurarRascunho();
 render();
